@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Typing Drills</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <h1>Typing Drill</h1>
+    <div id="drill-container">
+      <p id="prompt"></p>
+      <textarea id="input" rows="4" autofocus></textarea>
+      <div id="feedback"></div>
+      <button id="next-btn" disabled>Next</button>
+    </div>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -8,25 +8,24 @@ body {
   background: #f0f0f0;
   padding: 1rem;
   border-radius: 4px;
+  cursor: text;
+  outline: none;
+  user-select: none;
+  white-space: pre-wrap;
+  min-height: 2em;
 }
 
-textarea {
-  width: 100%;
-  margin-top: 1rem;
-  font-size: 1rem;
-  line-height: 1.4;
+/* Individual character spans */
+#prompt .char {
+  color: black;
 }
 
-#feedback {
-  margin-top: 0.5rem;
-  height: 1.2em;
-  font-weight: bold;
+#prompt .char.correct {
+  color: blue;
+}
+
+#prompt .char.error {
   color: red;
-}
-
-button {
-  margin-top: 1rem;
-  padding: 0.5rem 1rem;
 }
 
 /* Shake animation */
@@ -36,11 +35,15 @@ button {
   40%, 80%   { transform: translateX(5px); }
 }
 
-textarea.shake {
+#prompt.shake {
   animation: shake 0.3s ease;
 }
 
-/* Feedback coloring */
+#feedback {
+  margin-top: 0.5rem;
+  min-height: 1.2em;
+}
+
 #feedback .wrong {
   color: #c0392b;  /* red */
   font-weight: bold;
@@ -49,4 +52,9 @@ textarea.shake {
 #feedback .expected {
   color: #27ae60;  /* green */
   font-weight: bold;
+}
+
+button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
 }

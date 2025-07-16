@@ -15,24 +15,32 @@ body {
   min-height: 2em;
 }
 
-/* Individual character spans */
+/* Base character */
 #prompt .char {
   color: black;
 }
 
+/* Correctly typed */
 #prompt .char.correct {
   color: blue;
 }
 
+/* Mistyped */
 #prompt .char.error {
   color: red;
 }
 
+/* Next character to type */
+#prompt .char.current {
+  color: gold;
+  text-decoration: underline;
+}
+
 /* Shake animation */
 @keyframes shake {
-  0%, 100%   { transform: translateX(0); }
-  20%, 60%   { transform: translateX(-5px); }
-  40%, 80%   { transform: translateX(5px); }
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
 }
 
 #prompt.shake {
@@ -45,12 +53,12 @@ body {
 }
 
 #feedback .wrong {
-  color: #c0392b;  /* red */
+  color: #c0392b;
   font-weight: bold;
 }
 
 #feedback .expected {
-  color: #27ae60;  /* green */
+  color: #27ae60;
   font-weight: bold;
 }
 

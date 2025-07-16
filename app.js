@@ -48,6 +48,9 @@ function loadDrill(index) {
 
 // 6. Handle every keystroke
 function onKeyDown(e) {
+  // 6.1 Ignore browser shortcuts
+  if (e.ctrlKey || e.altKey || e.metaKey) return;
+
   // only single-character keys
   if (e.key.length !== 1) return;
   // ignore if drill is already complete
@@ -84,16 +87,22 @@ function onKeyDown(e) {
 
       // Build tailored feedback
       let msg;
+      // Case-only mistake?
       if (pressed.toLowerCase() === expected.toLowerCase()) {
-        // Only case is wrong
         if (expected === expected.toUpperCase()) {
           msg = `Hold SHIFT to capitalize <span class="expected">${expected}</span> instead of lowercase <span class="wrong">${pressed}</span>.`;
         } else {
           msg = `Use lowercase <span class="expected">${expected}</span>, not <span class="wrong">${pressed}</span>.`;
         }
-      } else {
-        // Completely wrong character
-        msg = `You entered <span class="wrong">${pressed}</span>, but expected <span class="expected">${expected}</span>.`;
+      }
+      // Completely wrong character
+      else {
+        if (expected === " ") {
+          // Special message for space
+          msg = `You entered <span class="wrong">${pressed}</span>, but we were expecting a space.`;
+        } else {
+          msg = `You entered <span class="wrong">${pressed}</span>, but expected <span class="expected">${expected}</span>.`;
+        }
       }
       feedbackEl.innerHTML = msg;
 

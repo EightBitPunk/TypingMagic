@@ -28,3 +28,25 @@ button {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
 }
+
+/* Shake animation */
+@keyframes shake {
+  0%, 100%   { transform: translateX(0); }
+  20%, 60%   { transform: translateX(-5px); }
+  40%, 80%   { transform: translateX(5px); }
+}
+
+textarea.shake {
+  animation: shake 0.3s ease;
+}
+
+/* Feedback coloring */
+#feedback .wrong {
+  color: #c0392b;  /* red */
+  font-weight: bold;
+}
+
+#feedback .expected {
+  color: #27ae60;  /* green */
+  font-weight: bold;
+}

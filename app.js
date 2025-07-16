@@ -7,9 +7,7 @@ const drills = [
 
 // 2. State variables
 let current   = 0;   // which drill index
-let cursorPos = 0;   // position within the string
-let errorFlag = false;
-
+let cursorPos = 0;   // position within the prompt
 const promptEl   = document.getElementById("prompt");
 const feedbackEl = document.getElementById("feedback");
 const nextBtn    = document.getElementById("next-btn");
@@ -25,7 +23,7 @@ function renderPrompt() {
   });
 }
 
-// 4. Highlight the next character to type
+// 4. Highlight the current character
 function updateCurrentSpan() {
   const spans = promptEl.querySelectorAll("span.char");
   spans.forEach(s => s.classList.remove("current"));
@@ -38,7 +36,6 @@ function updateCurrentSpan() {
 function loadDrill(index) {
   current   = index;
   cursorPos = 0;
-  errorFlag = false;
   renderPrompt();
   updateCurrentSpan();
   feedbackEl.innerHTML = "";
@@ -46,81 +43,88 @@ function loadDrill(index) {
   promptEl.focus();
 }
 
-// 6. Handle every keystroke
+// 6. Handle every keypress
 function onKeyDown(e) {
-  // 6.1 Ignore browser shortcuts
+  // 6.1 Let browser shortcuts through
   if (e.ctrlKey || e.altKey || e.metaKey) return;
 
-  // only single-character keys
-  if (e.key.length !== 1) return;
-  // ignore if drill is already complete
-  if (!nextBtn.disabled) return;
+  const spans = promptEl.querySelectorAll("span.char");
 
-  const spans    = promptEl.querySelectorAll("span.char");
+  // 6.2 BACKSPACE: move cursor back & reset that char
+  if (e.key === "Backspace") {
+    e.preventDefault();
+    if (cursorPos > 0) {
+      // Step back
+      cursorPos--;
+      // Clear any styling on that span
+      spans[cursorPos].classList.remove("correct", "error");
+      updateCurrentSpan();
+      feedbackEl.innerHTML = "";
+    }
+    return;
+  }
+
+  // 6.3 Only handle single-character typing when drill is active
+  if (e.key.length !== 1 || !nextBtn.disabled) return;
+
   const expected = drills[current][cursorPos];
   const pressed  = e.key;
 
-  // If a typo has happened, only accept the correct key
-  if (errorFlag) {
-    if (pressed === expected) {
-      spans[cursorPos].classList.remove("error");
-      spans[cursorPos].classList.add("correct");
-      errorFlag = false;
-      feedbackEl.innerHTML = "";
-      cursorPos++;
-      updateCurrentSpan();
-    } else {
-      e.preventDefault();
-    }
+  // Remove the gold underline on current
+  spans[cursorPos].classList.remove("current");
+
+  // 6.4 Correct keystroke?
+  if (pressed === expected) {
+    spans[cursorPos].classList.add("correct");
+    feedbackEl.innerHTML = "";
   }
-  // Normal typing flow
+  // 6.5 Wrong keystroke
   else {
-    if (pressed === expected) {
-      spans[cursorPos].classList.add("correct");
-      cursorPos++;
-      updateCurrentSpan();
+    spans[cursorPos].classList.add("error");
+
+    // Build feedback message
+    let msg;
+    if (pressed.toLowerCase() === expected.toLowerCase()) {
+      // Case-only error
+      if (expected === expected.toUpperCase()) {
+        msg =
+          `Hold SHIFT to capitalize <span class="expected">${expected}</span> instead of lowercase <span class="wrong">${pressed}</span>.`;
+      } else {
+        msg =
+          `Use lowercase <span class="expected">${expected}</span>, not <span class="wrong">${pressed}</span>.`;
+      }
     } else {
-      // block the wrong key
-      e.preventDefault();
-      errorFlag = true;
-      spans[cursorPos].classList.add("error");
-
-      // Build tailored feedback
-      let msg;
-      // Case-only mistake?
-      if (pressed.toLowerCase() === expected.toLowerCase()) {
-        if (expected === expected.toUpperCase()) {
-          msg = `Hold SHIFT to capitalize <span class="expected">${expected}</span> instead of lowercase <span class="wrong">${pressed}</span>.`;
-        } else {
-          msg = `Use lowercase <span class="expected">${expected}</span>, not <span class="wrong">${pressed}</span>.`;
-        }
+      // Completely wrong char
+      if (expected === " ") {
+        msg =
+          `You entered <span class="wrong">${pressed}</span>, but we were expecting a space.`;
+      } else {
+        msg =
+          `You entered <span class="wrong">${pressed}</span>, but expected <span class="expected">${expected}</span>.`;
       }
-      // Completely wrong character
-      else {
-        if (expected === " ") {
-          // Special message for space
-          msg = `You entered <span class="wrong">${pressed}</span>, but we were expecting a space.`;
-        } else {
-          msg = `You entered <span class="wrong">${pressed}</span>, but expected <span class="expected">${expected}</span>.`;
-        }
-      }
-      feedbackEl.innerHTML = msg;
-
-      // Shake animation
-      promptEl.classList.add("shake");
-      promptEl.addEventListener("animationend", () => {
-        promptEl.classList.remove("shake");
-      }, { once: true });
     }
+    feedbackEl.innerHTML = msg;
+
+    // Shake animation
+    promptEl.classList.add("shake");
+    promptEl.addEventListener(
+      "animationend",
+      () => promptEl.classList.remove("shake"),
+      { once: true }
+    );
   }
 
-  // If fully typed without errors, enable Next
-  if (!errorFlag && cursorPos >= drills[current].length) {
+  // 6.6 Advance cursor & highlight the next char
+  cursorPos++;
+  updateCurrentSpan();
+
+  // 6.7 If we've reached the end, enable the Next button
+  if (cursorPos >= drills[current].length) {
     nextBtn.disabled = false;
   }
 }
 
-// 7. Advance to the next drill
+// 7. Next-drill logic
 nextBtn.addEventListener("click", () => {
   if (current + 1 < drills.length) {
     loadDrill(current + 1);
@@ -130,6 +134,6 @@ nextBtn.addEventListener("click", () => {
   }
 });
 
-// 8. Initialize listeners and start the first drill
+// 8. Start everything
 document.addEventListener("keydown", onKeyDown);
 loadDrill(0);

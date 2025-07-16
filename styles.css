@@ -15,7 +15,7 @@ body {
   min-height: 2em;
 }
 
-/* Base char style */
+/* Base character */
 #prompt .char {
   color: black;
 }

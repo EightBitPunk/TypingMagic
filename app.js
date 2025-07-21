@@ -1,4 +1,7 @@
+# Since the task is to update a JavaScript file, we will write the updated content to a file named 'app.js'.
+# This Python code will generate the full updated app.js content based on the user's requirements.
 
+updated_app_js = """
 // Drill sentences
 const drills = [
   "The quick brown fox jumps over the lazy dog.",
@@ -9,6 +12,7 @@ const drills = [
 // DOM Elements
 const loginScreen = document.getElementById("login-screen");
 const loginBtn = document.getElementById("login-btn");
+const toggleModeBtn = document.getElementById("toggle-mode-btn");
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
 const roleSelect = document.getElementById("role");
@@ -34,49 +38,45 @@ const teacherClassroomView = document.getElementById("teacher-classroom-view");
 const teacherClassroomName = document.getElementById("teacher-classroom-name");
 const sortOption = document.getElementById("sort-option");
 const studentProgressTable = document.getElementById("student-progress-table");
+const teacherClassroomsList = document.getElementById("teacher-classrooms-list");
 
-// Mode toggle
-let isSignUp = true;
-const toggleModeBtn = document.createElement("button");
-toggleModeBtn.textContent = "Switch to Log In";
-toggleModeBtn.addEventListener("click", () => {
-  isSignUp = !isSignUp;
-  toggleModeBtn.textContent = isSignUp ? "Switch to Log In" : "Switch to Sign Up";
-  loginBtn.textContent = isSignUp ? "Sign Up" : "Log In";
-});
-loginScreen.appendChild(toggleModeBtn);
-
-// State
 let current = 0;
 let cursorPos = 0;
 let currentUser = null;
 let currentClassroom = null;
 let currentDate = new Date().toISOString().split("T")[0];
+let isSignUp = true;
 
-// Utility
 function generateClassroomCode() {
   return "C" + Math.floor(100000 + Math.random() * 900000);
 }
 
-// Ensure classroom code is visible by default for student
-function updateClassroomCodeVisibility() {
-  if (roleSelect.value === "student") {
-    studentClassroomCode.classList.remove("hidden");
-  } else {
-    studentClassroomCode.classList.add("hidden");
-  }
+function updateToggleButton() {
+  loginBtn.textContent = isSignUp ? "Sign Up" : "Log In";
+  toggleModeBtn.textContent = isSignUp ? "Switch to Log In" : "Switch to Sign Up";
+  studentClassroomCode.classList.toggle("hidden", !isSignUp || roleSelect.value !== "student");
 }
-updateClassroomCodeVisibility();
-roleSelect.addEventListener("change", updateClassroomCodeVisibility);
 
-// Login
+roleSelect.addEventListener("change", () => {
+  updateToggleButton();
+});
+
+toggleModeBtn.addEventListener("click", () => {
+  isSignUp = !isSignUp;
+  updateToggleButton();
+});
+
+window.addEventListener("load", () => {
+  updateToggleButton();
+});
+
 loginBtn.addEventListener("click", () => {
   const name = usernameInput.value.trim();
   const password = passwordInput.value;
   const role = roleSelect.value;
   const classroomCode = classroomCodeInput.value.trim();
 
-  if (!name || !password || (role === "student" && !classroomCode)) {
+  if (!name || !password || (isSignUp && role === "student" && !classroomCode)) {
     loginMessage.textContent = "Please fill in all required fields.";
     return;
   }
@@ -84,10 +84,6 @@ loginBtn.addEventListener("click", () => {
   const users = JSON.parse(localStorage.getItem("users") || "{}");
 
   if (isSignUp) {
-    if (users[name]) {
-      loginMessage.textContent = "User already exists. Please log in.";
-      return;
-    }
     if (role === "student") {
       const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
       if (!classrooms[classroomCode]) {
@@ -102,12 +98,12 @@ loginBtn.addEventListener("click", () => {
     currentUser = users[name];
     proceedToDashboard(name, role);
   } else {
-    if (!users[name] || users[name].password !== password || users[name].role !== role) {
-      loginMessage.textContent = "Incorrect credentials.";
-      return;
+    if (users[name] && users[name].password === password && users[name].role === role) {
+      currentUser = users[name];
+      proceedToDashboard(name, role);
+    } else {
+      loginMessage.textContent = "Incorrect login credentials.";
     }
-    currentUser = users[name];
-    proceedToDashboard(name, role);
   }
 });
 
@@ -117,20 +113,7 @@ function proceedToDashboard(name, role) {
   if (role === "teacher") {
     teacherNameEl.textContent = name;
     teacherDashboard.classList.remove("hidden");
-
-    const user = JSON.parse(localStorage.getItem("users"))[name];
-    const code = user.classroomCode;
-    if (code) {
-      const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
-      const classroom = classrooms[code];
-      if (classroom) {
-        classroomCodeDisplay.textContent = `Classroom Code: ${code}`;
-        teacherClassroomName.textContent = classroom.name;
-        teacherClassroomView.classList.remove("hidden");
-        currentClassroom = code;
-        updateTeacherDashboard();
-      }
-    }
+    loadTeacherClassrooms(name);
   } else {
     studentNameEl.textContent = name;
     studentDashboard.classList.remove("hidden");
@@ -138,7 +121,6 @@ function proceedToDashboard(name, role) {
   }
 }
 
-// Classroom Creation
 createClassroomBtn.addEventListener("click", () => {
   const classroomName = newClassroomNameInput.value.trim();
   if (!classroomName) return;
@@ -158,9 +140,29 @@ createClassroomBtn.addEventListener("click", () => {
   currentClassroom = code;
 
   updateTeacherDashboard();
+  loadTeacherClassrooms(teacherNameEl.textContent);
 });
 
-// Drill Rendering
+function loadTeacherClassrooms(teacherName) {
+  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
+  teacherClassroomsList.innerHTML = "";
+  Object.entries(classrooms).forEach(([code, data]) => {
+    if (data.teacher === teacherName) {
+      const div = document.createElement("div");
+      div.innerHTML = `<strong>${data.name}</strong> (Code: ${code}) 
+        <button onclick="deleteClassroom('${code}')">Delete</button>`;
+      teacherClassroomsList.appendChild(div);
+    }
+  });
+}
+
+function deleteClassroom(code) {
+  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
+  delete classrooms[code];
+  localStorage.setItem("classrooms", JSON.stringify(classrooms));
+  loadTeacherClassrooms(teacherNameEl.textContent);
+}
+
 function renderPrompt() {
   promptEl.innerHTML = "";
   drills[current].split("").forEach(char => {
@@ -179,15 +181,6 @@ function updateCurrentSpan() {
   }
 }
 
-function updateLiveStats() {
-  const spans = promptEl.querySelectorAll("span.char");
-  const correct = Array.from(spans).filter(s => s.classList.contains("correct")).length;
-  const errors = Array.from(spans).filter(s => s.classList.contains("error")).length;
-  const total = spans.length;
-  const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
-  studentStats.innerHTML = `Accuracy: ${accuracy}% | Errors: ${errors}`;
-}
-
 function loadDrill(index) {
   current = index;
   cursorPos = 0;
@@ -199,7 +192,15 @@ function loadDrill(index) {
   updateLiveStats();
 }
 
-// Typing Logic
+function updateLiveStats() {
+  const spans = promptEl.querySelectorAll("span.char");
+  const correct = Array.from(spans).filter(s => s.classList.contains("correct")).length;
+  const errors = Array.from(spans).filter(s => s.classList.contains("error")).length;
+  const total = spans.length;
+  const accuracy = Math.max(0, Math.round(((total - errors) / total) * 100));
+  studentStats.innerHTML = `Accuracy: ${accuracy}% | Errors: ${errors}`;
+}
+
 document.addEventListener("keydown", (e) => {
   if (studentDashboard.classList.contains("hidden")) return;
   if (e.ctrlKey || e.altKey || e.metaKey) return;
@@ -234,21 +235,7 @@ document.addEventListener("keydown", (e) => {
     feedbackEl.innerHTML = "";
   } else {
     spans[cursorPos].classList.add("error");
-
-    let msg;
-    if (pressed.toLowerCase() === expected.toLowerCase()) {
-      msg = expected === expected.toUpperCase()
-        ? `Hold SHIFT to capitalize <span class="expected">${expected}</span> instead of lowercase <span class="wrong">${pressed}</span>.`
-        : `Use lowercase <span class="expected">${expected}</span>, not <span class="wrong">${pressed}</span>.`;
-    } else {
-      msg = expected === " "
-        ? `You entered <span class="wrong">${pressed}</span>, but we were expecting a space.`
-        : `You entered <span class="wrong">${pressed}</span>, but expected <span class="expected">${expected}</span>.`;
-    }
-
-    feedbackEl.innerHTML = msg;
-    promptEl.classList.add("shake");
-    promptEl.addEventListener("animationend", () => promptEl.classList.remove("shake"), { once: true });
+    feedbackEl.innerHTML = `Mistake on "${expected}"`;
   }
 
   cursorPos++;
@@ -260,13 +247,12 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// Next Drill
 nextBtn.addEventListener("click", () => {
   const spans = promptEl.querySelectorAll("span.char");
   const correct = Array.from(spans).filter(s => s.classList.contains("correct")).length;
   const errors = Array.from(spans).filter(s => s.classList.contains("error")).length;
   const total = spans.length;
-  const accuracy = Math.round((correct / total) * 100);
+  const accuracy = Math.max(0, Math.round(((total - errors) / total) * 100));
 
   const users = JSON.parse(localStorage.getItem("users") || "{}");
   const name = studentNameEl.textContent;
@@ -289,7 +275,6 @@ nextBtn.addEventListener("click", () => {
   }
 });
 
-// Teacher Dashboard Sorting
 sortOption.addEventListener("change", updateTeacherDashboard);
 
 function updateTeacherDashboard() {
@@ -307,16 +292,46 @@ function updateTeacherDashboard() {
     });
   }
 
-  let html = "<table><tr><th>Name</th><th>Date</th><th>Drills</th><th>Accuracy</th><th>Errors</th></tr>";
+  let html = "<table><tr><th>Name</th><th>Date</th><th>Drills</th><th>Accuracy</th><th>Errors</th><th>Actions</th></tr>";
   sortedStudents.forEach(([name, data]) => {
     const progress = data.progress || {};
     Object.entries(progress).forEach(([date, drills]) => {
       const totalDrills = drills.length;
       const avgAccuracy = Math.round(drills.reduce((sum, d) => sum + d.accuracy, 0) / totalDrills);
       const totalErrors = drills.reduce((sum, d) => sum + d.errors, 0);
-      html += `<tr><td>${name}</td><td>${date}</td><td>${totalDrills}</td><td>${avgAccuracy}%</td><td>${totalErrors}</td></tr>`;
+      html += `<tr><td>${name}</td><td>${date}</td><td>${totalDrills}</td><td>${avgAccuracy}%</td><td>${totalErrors}</td>
+        <td>
+          <button onclick="resetStudentPassword('${name}')">Reset Password</button>
+          <button onclick="deleteStudent('${name}')">Delete Student</button>
+        </td></tr>`;
     });
   });
   html += "</table>";
   studentProgressTable.innerHTML = html;
 }
+
+function resetStudentPassword(name) {
+  const newPass = prompt("Enter new password for " + name);
+  if (newPass) {
+    const users = JSON.parse(localStorage.getItem("users") || "{}");
+    users[name].password = newPass;
+    localStorage.setItem("users", JSON.stringify(users));
+    alert("Password reset.");
+  }
+}
+
+function deleteStudent(name) {
+  if (confirm("Are you sure you want to delete " + name + "?")) {
+    const users = JSON.parse(localStorage.getItem("users") || "{}");
+    delete users[name];
+    localStorage.setItem("users", JSON.stringify(users));
+    updateTeacherDashboard();
+  }
+}
+"""
+
+# Write the updated content to app.js
+with open("app.js", "w") as f:
+    f.write(updated_app_js)
+
+print("Updated app.js file has been written successfully.")

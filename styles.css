@@ -1,9 +1,35 @@
+/* General layout */
 body {
   font-family: sans-serif;
   max-width: 600px;
   margin: 2rem auto;
 }
 
+/* Hidden class for toggling views */
+.hidden {
+  display: none;
+}
+
+/* Login screen styles */
+#login-screen label {
+  display: block;
+  margin: 0.5rem 0;
+}
+
+#login-screen input,
+#login-screen select {
+  margin-left: 0.5rem;
+  padding: 0.3rem;
+  font-size: 1rem;
+}
+
+#login-screen button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+}
+
+/* Prompt area */
 #prompt {
   background: #f0f0f0;
   padding: 1rem;
@@ -47,6 +73,7 @@ body {
   animation: shake 0.3s ease;
 }
 
+/* Feedback area */
 #feedback {
   margin-top: 0.5rem;
   min-height: 1.2em;
@@ -62,7 +89,9 @@ body {
   font-weight: bold;
 }
 
+/* Button styling */
 button {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
+  font-size: 1rem;
 }

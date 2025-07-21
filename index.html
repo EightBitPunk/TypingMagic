@@ -1,19 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Typing Drills</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <title>Typing Magic</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <main>
-    <h1>Typing Drill</h1>
-    <div id="drill-container">
-      <p id="prompt" tabindex="0"></p>
-      <div id="feedback"></div>
-      <button id="next-btn" disabled>Next</button>
-    </div>
+    <h1>Typing Magic</h1>
+
+    <!-- Login Screen -->
+    <section id="login-screen">
+      <label>
+        Name:
+        <input type="text" id="username" />
+      </label>
+      <label>
+        Role:
+        <select id="role">
+          <option value="student">Student</option>
+          <option value="teacher">Teacher</option>
+        </select>
+      </label>
+      <button id="login-btn">Login</button>
+    </section>
+
+    <!-- Teacher Dashboard -->
+    <section id="teacher-dashboard" class="hidden">
+      <h2>Welcome, <span id="teacher-name"></span> (Teacher)</h2>
+      <p>Teacher dashboard coming soon...</p>
+    </section>
+
+    <!-- Student Dashboard -->
+    <section id="student-dashboard" class="hidden">
+      <h2>Welcome, <span id="student-name"></span> (Student)</h2>
+      <div id="drill-container">
+        <p id="prompt" tabindex="0"></p>
+        <div id="feedback"></div>
+        <button id="next-btn" disabled>Next</button>
+      </div>
+    </section>
   </main>
+
   <script src="app.js"></script>
 </body>
 </html>

@@ -1,3 +1,7 @@
+# The user's request is about fixing a JavaScript file (app.js), but since this environment only supports Python,
+# I will provide the corrected JavaScript code as a string so the user can copy and paste it into their app.js file.
+
+corrected_app_js = """
 // Drill sentences
 const drills = [
   "The quick brown fox jumps over the lazy dog.",
@@ -95,6 +99,8 @@ loginBtn.addEventListener("click", () => {
         loginMessage.textContent = "Invalid classroom code.";
         return;
       }
+      classrooms[classroomCode].students.push(name);
+      localStorage.setItem("classrooms", JSON.stringify(classrooms));
     }
     users[name] = { password, role, classroomCode, progress: {} };
     localStorage.setItem("users", JSON.stringify(users));
@@ -116,21 +122,6 @@ function proceedToDashboard(name, role) {
   if (role === "teacher") {
     teacherNameEl.textContent = name;
     teacherDashboard.classList.remove("hidden");
-
-    const users = JSON.parse(localStorage.getItem("users") || "{}");
-    const user = users[name];
-    const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
-
-    for (const code in classrooms) {
-      if (classrooms[code].teacher === name) {
-        currentClassroom = code;
-        teacherClassroomName.textContent = classrooms[code].name;
-        classroomCodeDisplay.textContent = `Classroom Code: ${code}`;
-        teacherClassroomView.classList.remove("hidden");
-        break;
-      }
-    }
-
     updateTeacherDashboard();
   } else {
     studentNameEl.textContent = name;
@@ -150,18 +141,53 @@ createClassroomBtn.addEventListener("click", () => {
   localStorage.setItem("classrooms", JSON.stringify(classrooms));
 
   const users = JSON.parse(localStorage.getItem("users") || "{}");
-  users[teacherNameEl.textContent].classroomCode = code;
+  if (!users[teacherNameEl.textContent].classrooms) {
+    users[teacherNameEl.textContent].classrooms = [];
+  }
+  users[teacherNameEl.textContent].classrooms.push(code);
   localStorage.setItem("users", JSON.stringify(users));
-
-  classroomCodeDisplay.textContent = `Classroom Code: ${code}`;
-  teacherClassroomName.textContent = classroomName;
-  teacherClassroomView.classList.remove("hidden");
-  currentClassroom = code;
 
   updateTeacherDashboard();
 });
 
-// Load drill for students
+function updateTeacherDashboard() {
+  const users = JSON.parse(localStorage.getItem("users") || "{}");
+  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
+  const teacher = teacherNameEl.textContent;
+  const teacherUser = users[teacher];
+  const codes = teacherUser.classrooms || [];
+
+  let html = "";
+  codes.forEach(code => {
+    const classroom = classrooms[code];
+    if (!classroom) return;
+    html += `<h3>${classroom.name} (Code: ${code})</h3>`;
+    html += "<table><tr><th>Student</th><th>Date</th><th>Drills</th><th>Accuracy</th><th>Errors</th></tr>";
+    classroom.students.forEach(studentName => {
+      const student = users[studentName];
+      if (!student || !student.progress) return;
+      Object.entries(student.progress).forEach(([date, drills]) => {
+        const totalDrills = drills.length;
+        const avgAccuracy = Math.round(drills.reduce((sum, d) => sum + d.accuracy, 0) / totalDrills);
+        const totalErrors = drills.reduce((sum, d) => sum + d.errors, 0);
+        html += `<tr><td>${studentName}</td><td>${date}</td><td>${totalDrills}</td><td>${avgAccuracy}%</td><td>${totalErrors}</td></tr>`;
+      });
+    });
+    html += "</table>";
+  });
+
+  studentProgressTable.innerHTML = html;
+}
+
+// Typing logic
+function updateCurrentSpan() {
+  const spans = promptEl.querySelectorAll("span.char");
+  spans.forEach(s => s.classList.remove("current"));
+  if (cursorPos < spans.length) {
+    spans[cursorPos].classList.add("current");
+  }
+}
+
 function loadDrill(index) {
   current = index;
   cursorPos = 0;
@@ -178,14 +204,82 @@ function loadDrill(index) {
   promptEl.focus();
 }
 
-function updateCurrentSpan() {
-  const spans = promptEl.querySelectorAll("span.char");
-  spans.forEach(s => s.classList.remove("current"));
-  if (cursorPos < spans.length) {
-    spans[cursorPos].classList.add("current");
-  }
-}
+document.addEventListener("keydown", (e) => {
+  if (studentDashboard.classList.contains("hidden")) return;
+  if (e.ctrlKey || e.altKey || e.metaKey) return;
 
-function updateTeacherDashboard() {
-  // Placeholder for teacher dashboard update logic
-}
+  const spans = promptEl.querySelectorAll("span.char");
+
+  if (e.key === "Backspace") {
+    e.preventDefault();
+    if (cursorPos > 0) {
+      cursorPos--;
+      spans[cursorPos].classList.remove("correct", "error");
+      updateCurrentSpan();
+      feedbackEl.innerHTML = "";
+      if (!nextBtn.disabled) nextBtn.disabled = true;
+    }
+    return;
+  }
+
+  if (e.key.length !== 1 || cursorPos >= spans.length) {
+    e.preventDefault();
+    return;
+  }
+
+  const expected = drills[current][cursorPos];
+  const pressed = e.key;
+
+  spans[cursorPos].classList.remove("current");
+
+  if (pressed === expected) {
+    spans[cursorPos].classList.add("correct");
+    feedbackEl.innerHTML = "";
+  } else {
+    spans[cursorPos].classList.add("error");
+    feedbackEl.innerHTML = `Expected "${expected}", but got "${pressed}".`;
+  }
+
+  cursorPos++;
+  updateCurrentSpan();
+
+  if (cursorPos >= spans.length) {
+    nextBtn.disabled = false;
+  }
+});
+
+nextBtn.addEventListener("click", () => {
+  const spans = promptEl.querySelectorAll("span.char");
+  const correct = Array.from(spans).filter(s => s.classList.contains("correct")).length;
+  const errors = Array.from(spans).filter(s => s.classList.contains("error")).length;
+  const total = spans.length;
+  const accuracy = Math.round((correct / total) * 100);
+
+  const users = JSON.parse(localStorage.getItem("users") || "{}");
+  const name = studentNameEl.textContent;
+  const user = users[name];
+
+  if (!user.progress[currentDate]) {
+    user.progress[currentDate] = [];
+  }
+
+  user.progress[currentDate].push({ drill: current, correct, errors, accuracy });
+  localStorage.setItem("users", JSON.stringify(users));
+
+  studentStats.innerHTML = `Drill ${current + 1} complete. Accuracy: ${accuracy}%. Errors: ${errors}`;
+
+  if (current + 1 < drills.length) {
+    loadDrill(current + 1);
+  } else {
+    promptEl.textContent = "You've completed your day's typing prompts!";
+    nextBtn.style.display = "none";
+  }
+});
+"""
+
+# Save the corrected JavaScript to a file so the user can download it
+with open("app.js", "w") as f:
+    f.write(corrected_app_js)
+
+"app.js has been updated and saved with the requested fixes."
+

@@ -1,9 +1,6 @@
+// Debug: make sure this file loaded
 console.log("🔥 app.js loaded! DOMContentLoaded? ", document.readyState);
 
-# The user's request is about fixing a JavaScript file (app.js), but since this environment only supports Python,
-# I will provide the corrected JavaScript code as a string so the user can copy and paste it into their app.js file.
-
-corrected_app_js = """
 // Drill sentences
 const drills = [
   "The quick brown fox jumps over the lazy dog.",
@@ -12,45 +9,44 @@ const drills = [
 ];
 
 // DOM Elements
-const loginScreen = document.getElementById("login-screen");
-const loginBtn = document.getElementById("login-btn");
-const toggleModeBtn = document.createElement("button");
-toggleModeBtn.id = "toggle-mode-btn";
+const loginScreen              = document.getElementById("login-screen");
+const loginBtn                 = document.getElementById("login-btn");
+const toggleModeBtn            = document.createElement("button");
+toggleModeBtn.id               = "toggle-mode-btn";
 loginScreen.appendChild(toggleModeBtn);
 
-const usernameInput = document.getElementById("username");
-const passwordInput = document.getElementById("password");
-const roleSelect = document.getElementById("role");
-const loginMessage = document.getElementById("login-message");
-const classroomCodeInput = document.getElementById("classroom-code");
-const studentClassroomCode = document.getElementById("student-classroom-code");
+const usernameInput            = document.getElementById("username");
+const passwordInput            = document.getElementById("password");
+const roleSelect               = document.getElementById("role");
+const loginMessage             = document.getElementById("login-message");
+const classroomCodeInput       = document.getElementById("classroom-code");
+const studentClassroomCode     = document.getElementById("student-classroom-code");
 
-const teacherDashboard = document.getElementById("teacher-dashboard");
-const studentDashboard = document.getElementById("student-dashboard");
-const teacherNameEl = document.getElementById("teacher-name");
-const studentNameEl = document.getElementById("student-name");
+const teacherDashboard         = document.getElementById("teacher-dashboard");
+const studentDashboard         = document.getElementById("student-dashboard");
+const teacherNameEl            = document.getElementById("teacher-name");
+const studentNameEl            = document.getElementById("student-name");
 
-const promptEl = document.getElementById("prompt");
-const feedbackEl = document.getElementById("feedback");
-const nextBtn = document.getElementById("next-btn");
-const studentStats = document.getElementById("student-stats");
+const promptEl                 = document.getElementById("prompt");
+const feedbackEl               = document.getElementById("feedback");
+const nextBtn                  = document.getElementById("next-btn");
+const studentStats             = document.getElementById("student-stats");
 
-const classroomSetup = document.getElementById("classroom-setup");
-const createClassroomBtn = document.getElementById("create-classroom-btn");
-const newClassroomNameInput = document.getElementById("new-classroom-name");
-const classroomCodeDisplay = document.getElementById("classroom-code-display");
-const teacherClassroomView = document.getElementById("teacher-classroom-view");
-const teacherClassroomName = document.getElementById("teacher-classroom-name");
-const sortOption = document.getElementById("sort-option");
-const studentProgressTable = document.getElementById("student-progress-table");
+const classroomSetup           = document.getElementById("classroom-setup");
+const createClassroomBtn       = document.getElementById("create-classroom-btn");
+const newClassroomNameInput    = document.getElementById("new-classroom-name");
+const classroomCodeDisplay     = document.getElementById("classroom-code-display");
+const teacherClassroomView     = document.getElementById("teacher-classroom-view");
+const teacherClassroomName     = document.getElementById("teacher-classroom-name");
+const sortOption               = document.getElementById("sort-option");
+const studentProgressTable     = document.getElementById("student-progress-table");
 
 // State
-let current = 0;
-let cursorPos = 0;
-let currentUser = null;
-let currentClassroom = null;
-let currentDate = new Date().toISOString().split("T")[0];
-let isSignUp = false;
+let current        = 0;
+let cursorPos      = 0;
+let currentUser    = null;
+let currentDate    = new Date().toISOString().split("T")[0];
+let isSignUp       = false;
 
 // Utility
 function generateClassroomCode() {
@@ -61,26 +57,23 @@ function generateClassroomCode() {
 function updateModeUI() {
   loginBtn.textContent = isSignUp ? "Sign Up" : "Log In";
   toggleModeBtn.textContent = isSignUp ? "Go to Log In" : "Go to Sign Up";
-  const showClassroomCode = isSignUp && roleSelect.value === "student";
-  studentClassroomCode.classList.toggle("hidden", !showClassroomCode);
+  const showCode = isSignUp && roleSelect.value === "student";
+  studentClassroomCode.classList.toggle("hidden", !showCode);
 }
 
-// Role toggle
+// Wire up toggles
 roleSelect.addEventListener("change", updateModeUI);
 toggleModeBtn.addEventListener("click", () => {
   isSignUp = !isSignUp;
   updateModeUI();
 });
-
-// Initial UI setup
-isSignUp = false;
 updateModeUI();
 
-// Login or Sign Up
+// Login / Sign‑Up
 loginBtn.addEventListener("click", () => {
-  const name = usernameInput.value.trim();
-  const password = passwordInput.value;
-  const role = roleSelect.value;
+  const name          = usernameInput.value.trim();
+  const password      = passwordInput.value;
+  const role          = roleSelect.value;
   const classroomCode = classroomCodeInput.value.trim();
 
   if (!name || !password || (isSignUp && role === "student" && !classroomCode)) {
@@ -108,6 +101,7 @@ loginBtn.addEventListener("click", () => {
     localStorage.setItem("users", JSON.stringify(users));
     currentUser = users[name];
     proceedToDashboard(name, role);
+
   } else {
     if (users[name] && users[name].password === password && users[name].role === role) {
       currentUser = users[name];
@@ -120,7 +114,6 @@ loginBtn.addEventListener("click", () => {
 
 function proceedToDashboard(name, role) {
   loginScreen.classList.add("hidden");
-
   if (role === "teacher") {
     teacherNameEl.textContent = name;
     teacherDashboard.classList.remove("hidden");
@@ -132,20 +125,17 @@ function proceedToDashboard(name, role) {
   }
 }
 
-// Classroom Creation
+// Classroom Creation (Teacher)
 createClassroomBtn.addEventListener("click", () => {
-  const classroomName = newClassroomNameInput.value.trim();
-  if (!classroomName) return;
-
+  const cname = newClassroomNameInput.value.trim();
+  if (!cname) return;
   const code = generateClassroomCode();
-  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
-  classrooms[code] = { name: classroomName, teacher: teacherNameEl.textContent, students: [] };
-  localStorage.setItem("classrooms", JSON.stringify(classrooms));
+  const classes = JSON.parse(localStorage.getItem("classrooms") || "{}");
+  classes[code] = { name: cname, teacher: teacherNameEl.textContent, students: [] };
+  localStorage.setItem("classrooms", JSON.stringify(classes));
 
-  const users = JSON.parse(localStorage.getItem("users") || "{}");
-  if (!users[teacherNameEl.textContent].classrooms) {
-    users[teacherNameEl.textContent].classrooms = [];
-  }
+  const users = JSON.parse(localStorage.getItem("users"));
+  users[teacherNameEl.textContent].classrooms ||= [];
   users[teacherNameEl.textContent].classrooms.push(code);
   localStorage.setItem("users", JSON.stringify(users));
 
@@ -153,62 +143,60 @@ createClassroomBtn.addEventListener("click", () => {
 });
 
 function updateTeacherDashboard() {
-  const users = JSON.parse(localStorage.getItem("users") || "{}");
-  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
-  const teacher = teacherNameEl.textContent;
-  const teacherUser = users[teacher];
-  const codes = teacherUser.classrooms || [];
+  const users      = JSON.parse(localStorage.getItem("users") || "{}");
+  const classes    = JSON.parse(localStorage.getItem("classrooms") || "{}");
+  const teacher    = teacherNameEl.textContent;
+  const codes      = users[teacher].classrooms || [];
 
   let html = "";
   codes.forEach(code => {
-    const classroom = classrooms[code];
-    if (!classroom) return;
-    html += `<h3>${classroom.name} (Code: ${code})</h3>`;
-    html += "<table><tr><th>Student</th><th>Date</th><th>Drills</th><th>Accuracy</th><th>Errors</th></tr>";
-    classroom.students.forEach(studentName => {
-      const student = users[studentName];
-      if (!student || !student.progress) return;
-      Object.entries(student.progress).forEach(([date, drills]) => {
-        const totalDrills = drills.length;
-        const avgAccuracy = Math.round(drills.reduce((sum, d) => sum + d.accuracy, 0) / totalDrills);
-        const totalErrors = drills.reduce((sum, d) => sum + d.errors, 0);
-        html += `<tr><td>${studentName}</td><td>${date}</td><td>${totalDrills}</td><td>${avgAccuracy}%</td><td>${totalErrors}</td></tr>`;
-      });
+    const room = classes[code];
+    html += `<h3>${room.name} (Code: ${code})</h3><table>
+      <tr><th>Student</th><th>Date</th><th>Drills</th><th>Accuracy</th><th>Errors</th></tr>`;
+    room.students.forEach(s => {
+      users[s]?.progress &&
+        Object.entries(users[s].progress).forEach(([date, drills]) => {
+          const total     = drills.length;
+          const avgAcc    = Math.round(drills.reduce((a,d)=>a+d.accuracy,0)/total);
+          const totalErrs = drills.reduce((a,d)=>a+d.errors,0);
+          html += `<tr><td>${s}</td><td>${date}</td>
+            <td>${total}</td><td>${avgAcc}%</td><td>${totalErrs}</td></tr>`;
+        });
     });
-    html += "</table>";
+    html += `</table>`;
   });
 
   studentProgressTable.innerHTML = html;
 }
 
-// Typing logic
+// Typing drill logic
 function updateCurrentSpan() {
   const spans = promptEl.querySelectorAll("span.char");
   spans.forEach(s => s.classList.remove("current"));
-  if (cursorPos < spans.length) {
-    spans[cursorPos].classList.add("current");
-  }
+  if (cursorPos < spans.length) spans[cursorPos].classList.add("current");
 }
 
-function loadDrill(index) {
-  current = index;
+function loadDrill(idx) {
+  current   = idx;
   cursorPos = 0;
   promptEl.innerHTML = "";
-  drills[current].split("").forEach(char => {
+  drills[current].split("").forEach(ch => {
     const span = document.createElement("span");
-    span.classList.add("char");
-    span.textContent = char;
+    span.className = "char";
+    span.textContent = ch;
     promptEl.appendChild(span);
   });
   updateCurrentSpan();
-  feedbackEl.innerHTML = "";
+  feedbackEl.textContent = "";
   nextBtn.disabled = true;
   promptEl.focus();
 }
 
-document.addEventListener("keydown", (e) => {
+document.addEventListener("keydown", e => {
   if (studentDashboard.classList.contains("hidden")) return;
   if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+  console.log("keydown:", e.key, "cursorPos:", cursorPos);
 
   const spans = promptEl.querySelectorAll("span.char");
 
@@ -218,8 +206,8 @@ document.addEventListener("keydown", (e) => {
       cursorPos--;
       spans[cursorPos].classList.remove("correct", "error");
       updateCurrentSpan();
-      feedbackEl.innerHTML = "";
-      if (!nextBtn.disabled) nextBtn.disabled = true;
+      feedbackEl.textContent = "";
+      nextBtn.disabled = true;
     }
     return;
   }
@@ -230,58 +218,41 @@ document.addEventListener("keydown", (e) => {
   }
 
   const expected = drills[current][cursorPos];
-  const pressed = e.key;
-
   spans[cursorPos].classList.remove("current");
 
-  if (pressed === expected) {
+  if (e.key === expected) {
     spans[cursorPos].classList.add("correct");
-    feedbackEl.innerHTML = "";
+    feedbackEl.textContent = "";
   } else {
     spans[cursorPos].classList.add("error");
-    feedbackEl.innerHTML = `Expected "${expected}", but got "${pressed}".`;
+    feedbackEl.textContent = `Expected "${expected}", but got "${e.key}".`;
   }
 
   cursorPos++;
   updateCurrentSpan();
-
-  if (cursorPos >= spans.length) {
-    nextBtn.disabled = false;
-  }
+  nextBtn.disabled = (cursorPos < spans.length);
 });
 
 nextBtn.addEventListener("click", () => {
-  const spans = promptEl.querySelectorAll("span.char");
+  const spans   = promptEl.querySelectorAll("span.char");
   const correct = Array.from(spans).filter(s => s.classList.contains("correct")).length;
-  const errors = Array.from(spans).filter(s => s.classList.contains("error")).length;
-  const total = spans.length;
-  const accuracy = Math.round((correct / total) * 100);
+  const errors  = Array.from(spans).filter(s => s.classList.contains("error")).length;
+  const total   = spans.length;
+  const accuracy= Math.round((correct/total)*100);
 
   const users = JSON.parse(localStorage.getItem("users") || "{}");
-  const name = studentNameEl.textContent;
-  const user = users[name];
+  const user  = users[studentNameEl.textContent];
 
-  if (!user.progress[currentDate]) {
-    user.progress[currentDate] = [];
-  }
-
+  user.progress[currentDate] ||= [];
   user.progress[currentDate].push({ drill: current, correct, errors, accuracy });
   localStorage.setItem("users", JSON.stringify(users));
 
-  studentStats.innerHTML = `Drill ${current + 1} complete. Accuracy: ${accuracy}%. Errors: ${errors}`;
+  studentStats.textContent = `Drill ${current+1} complete. Accuracy: ${accuracy}%. Errors: ${errors}`;
 
-  if (current + 1 < drills.length) {
-    loadDrill(current + 1);
+  if (current+1 < drills.length) {
+    loadDrill(current+1);
   } else {
     promptEl.textContent = "You've completed your day's typing prompts!";
     nextBtn.style.display = "none";
   }
 });
-"""
-
-# Save the corrected JavaScript to a file so the user can download it
-with open("app.js", "w") as f:
-    f.write(corrected_app_js)
-
-"app.js has been updated and saved with the requested fixes."
-

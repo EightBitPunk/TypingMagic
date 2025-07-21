@@ -128,40 +128,58 @@ function proceedToDashboard(name, role) {
 // Classroom Creation (Teacher)
 createClassroomBtn.addEventListener("click", () => {
   const cname = newClassroomNameInput.value.trim();
-  if (!cname) return;
+  if (!cname) {
+    classroomCodeDisplay.textContent = "Please enter a classroom name.";
+    return;
+  }
   const code = generateClassroomCode();
+
+  // Save classroom
   const classes = JSON.parse(localStorage.getItem("classrooms") || "{}");
   classes[code] = { name: cname, teacher: teacherNameEl.textContent, students: [] };
   localStorage.setItem("classrooms", JSON.stringify(classes));
 
-  const users = JSON.parse(localStorage.getItem("users"));
+  // Attach to teacher
+  const users = JSON.parse(localStorage.getItem("users") || "{}");
   users[teacherNameEl.textContent].classrooms ||= [];
   users[teacherNameEl.textContent].classrooms.push(code);
   localStorage.setItem("users", JSON.stringify(users));
+
+  // Show code & view
+  classroomCodeDisplay.textContent = `New Code: ${code}`;
+  teacherClassroomName.textContent = cname;
+  teacherClassroomView.classList.remove("hidden");
 
   updateTeacherDashboard();
 });
 
 function updateTeacherDashboard() {
-  const users      = JSON.parse(localStorage.getItem("users") || "{}");
-  const classes    = JSON.parse(localStorage.getItem("classrooms") || "{}");
-  const teacher    = teacherNameEl.textContent;
-  const codes      = users[teacher].classrooms || [];
+  const users   = JSON.parse(localStorage.getItem("users") || "{}");
+  const classes = JSON.parse(localStorage.getItem("classrooms") || "{}");
+  const teacher = teacherNameEl.textContent;
+  const codes   = users[teacher]?.classrooms || [];
 
   let html = "";
   codes.forEach(code => {
     const room = classes[code];
+    if (!room) return;
     html += `<h3>${room.name} (Code: ${code})</h3><table>
       <tr><th>Student</th><th>Date</th><th>Drills</th><th>Accuracy</th><th>Errors</th></tr>`;
     room.students.forEach(s => {
-      users[s]?.progress &&
-        Object.entries(users[s].progress).forEach(([date, drills]) => {
-          const total     = drills.length;
-          const avgAcc    = Math.round(drills.reduce((a,d)=>a+d.accuracy,0)/total);
-          const totalErrs = drills.reduce((a,d)=>a+d.errors,0);
-          html += `<tr><td>${s}</td><td>${date}</td>
-            <td>${total}</td><td>${avgAcc}%</td><td>${totalErrs}</td></tr>`;
-        });
+      const progress = users[s]?.progress;
+      if (!progress) return;
+      Object.entries(progress).forEach(([date, drillsArr]) => {
+        const total     = drillsArr.length;
+        const avgAcc    = Math.round(drillsArr.reduce((a,d)=>a+d.accuracy,0)/total);
+        const totalErrs = drillsArr.reduce((a,d)=>a+d.errors,0);
+        html += `<tr>
+          <td>${s}</td>
+          <td>${date}</td>
+          <td>${total}</td>
+          <td>${avgAcc}%</td>
+          <td>${totalErrs}</td>
+        </tr>`;
+      });
     });
     html += `</table>`;
   });
@@ -195,11 +213,9 @@ function loadDrill(idx) {
 document.addEventListener("keydown", e => {
   if (studentDashboard.classList.contains("hidden")) return;
   if (e.ctrlKey || e.altKey || e.metaKey) return;
-
   console.log("keydown:", e.key, "cursorPos:", cursorPos);
 
   const spans = promptEl.querySelectorAll("span.char");
-
   if (e.key === "Backspace") {
     e.preventDefault();
     if (cursorPos > 0) {
@@ -211,7 +227,6 @@ document.addEventListener("keydown", e => {
     }
     return;
   }
-
   if (e.key.length !== 1 || cursorPos >= spans.length) {
     e.preventDefault();
     return;
@@ -219,7 +234,6 @@ document.addEventListener("keydown", e => {
 
   const expected = drills[current][cursorPos];
   spans[cursorPos].classList.remove("current");
-
   if (e.key === expected) {
     spans[cursorPos].classList.add("correct");
     feedbackEl.textContent = "";
@@ -242,13 +256,11 @@ nextBtn.addEventListener("click", () => {
 
   const users = JSON.parse(localStorage.getItem("users") || "{}");
   const user  = users[studentNameEl.textContent];
-
   user.progress[currentDate] ||= [];
   user.progress[currentDate].push({ drill: current, correct, errors, accuracy });
   localStorage.setItem("users", JSON.stringify(users));
 
   studentStats.textContent = `Drill ${current+1} complete. Accuracy: ${accuracy}%. Errors: ${errors}`;
-
   if (current+1 < drills.length) {
     loadDrill(current+1);
   } else {

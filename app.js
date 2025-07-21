@@ -153,4 +153,20 @@ function onKeyDown(e) {
   cursorPos++;
   updateCurrentSpan();
 
-  if
+  if (cursorPos >= spans.length) {
+    nextBtn.disabled = false;
+  }
+}
+
+// Next Drill
+nextBtn.addEventListener("click", () => {
+  if (current + 1 < drills.length) {
+    loadDrill(current + 1);
+  } else {
+    promptEl.textContent = "All drills complete—great work!";
+    nextBtn.style.display = "none";
+  }
+});
+
+// Initialize key listener
+document.addEventListener("keydown", onKeyDown);

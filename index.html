@@ -26,6 +26,12 @@
         Password:
         <input type="password" id="password" />
       </label>
+      <div id="student-classroom-code" class="hidden">
+        <label>
+          Classroom Code:
+          <input type="text" id="classroom-code" />
+        </label>
+      </div>
       <button id="login-btn">Login</button>
       <div id="login-message"></div>
     </section>
@@ -33,7 +39,25 @@
     <!-- Teacher Dashboard -->
     <section id="teacher-dashboard" class="hidden">
       <h2>Welcome, <span id="teacher-name"></span> (Teacher)</h2>
-      <p>Teacher dashboard coming soon...</p>
+      <div id="classroom-setup">
+        <label>
+          Create Classroom Name:
+          <input type="text" id="new-classroom-name" />
+        </label>
+        <button id="create-classroom-btn">Create Classroom</button>
+        <div id="classroom-code-display"></div>
+      </div>
+      <div id="teacher-classroom-view" class="hidden">
+        <h3>Classroom: <span id="teacher-classroom-name"></span></h3>
+        <label>
+          Sort by:
+          <select id="sort-option">
+            <option value="date">Date</option>
+            <option value="name">Student Last Name</option>
+          </select>
+        </label>
+        <div id="student-progress-table"></div>
+      </div>
     </section>
 
     <!-- Student Dashboard -->
@@ -44,6 +68,7 @@
         <div id="feedback"></div>
         <button id="next-btn" disabled>Next</button>
       </div>
+      <div id="student-stats"></div>
     </section>
   </main>
 

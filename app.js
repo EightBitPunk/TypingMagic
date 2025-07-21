@@ -1,3 +1,5 @@
+console.log("🔥 app.js loaded! DOMContentLoaded? ", document.readyState);
+
 # The user's request is about fixing a JavaScript file (app.js), but since this environment only supports Python,
 # I will provide the corrected JavaScript code as a string so the user can copy and paste it into their app.js file.
 

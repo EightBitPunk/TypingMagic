@@ -12,6 +12,8 @@ const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
 const roleSelect = document.getElementById("role");
 const loginMessage = document.getElementById("login-message");
+const classroomCodeInput = document.getElementById("classroom-code");
+const studentClassroomCode = document.getElementById("student-classroom-code");
 
 const teacherDashboard = document.getElementById("teacher-dashboard");
 const studentDashboard = document.getElementById("student-dashboard");
@@ -21,37 +23,70 @@ const studentNameEl = document.getElementById("student-name");
 const promptEl = document.getElementById("prompt");
 const feedbackEl = document.getElementById("feedback");
 const nextBtn = document.getElementById("next-btn");
+const studentStats = document.getElementById("student-stats");
+
+const classroomSetup = document.getElementById("classroom-setup");
+const createClassroomBtn = document.getElementById("create-classroom-btn");
+const newClassroomNameInput = document.getElementById("new-classroom-name");
+const classroomCodeDisplay = document.getElementById("classroom-code-display");
+const teacherClassroomView = document.getElementById("teacher-classroom-view");
+const teacherClassroomName = document.getElementById("teacher-classroom-name");
+const sortOption = document.getElementById("sort-option");
+const studentProgressTable = document.getElementById("student-progress-table");
 
 // State
 let current = 0;
 let cursorPos = 0;
+let currentUser = null;
+let currentClassroom = null;
+let currentDate = new Date().toISOString().split("T")[0];
 
-// Login Logic
+// Utility
+function generateClassroomCode() {
+  return "C" + Math.floor(100000 + Math.random() * 900000);
+}
+
+// Role toggle
+roleSelect.addEventListener("change", () => {
+  if (roleSelect.value === "student") {
+    studentClassroomCode.classList.remove("hidden");
+  } else {
+    studentClassroomCode.classList.add("hidden");
+  }
+});
+
+// Login
 loginBtn.addEventListener("click", () => {
   const name = usernameInput.value.trim();
   const password = passwordInput.value;
   const role = roleSelect.value;
+  const classroomCode = classroomCodeInput.value.trim();
 
-  if (!name || !password) {
-    loginMessage.textContent = "Please enter both name and password.";
+  if (!name || !password || (role === "student" && !classroomCode)) {
+    loginMessage.textContent = "Please fill in all required fields.";
     return;
   }
 
   const users = JSON.parse(localStorage.getItem("users") || "{}");
 
   if (users[name]) {
-    // Existing user
     if (users[name].password === password && users[name].role === role) {
-      loginMessage.textContent = "";
+      currentUser = users[name];
       proceedToDashboard(name, role);
     } else {
       loginMessage.textContent = "Incorrect password or role.";
     }
   } else {
-    // New user
-    users[name] = { password, role };
+    if (role === "student") {
+      const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
+      if (!classrooms[classroomCode]) {
+        loginMessage.textContent = "Invalid classroom code.";
+        return;
+      }
+    }
+    users[name] = { password, role, classroomCode, progress: {} };
     localStorage.setItem("users", JSON.stringify(users));
-    loginMessage.textContent = "";
+    currentUser = users[name];
     proceedToDashboard(name, role);
   }
 });
@@ -69,6 +104,27 @@ function proceedToDashboard(name, role) {
   }
 }
 
+// Classroom Creation
+createClassroomBtn.addEventListener("click", () => {
+  const classroomName = newClassroomNameInput.value.trim();
+  if (!classroomName) return;
+
+  const code = generateClassroomCode();
+  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
+  classrooms[code] = { name: classroomName, teacher: teacherNameEl.textContent, students: [] };
+  localStorage.setItem("classrooms", JSON.stringify(classrooms));
+
+  const users = JSON.parse(localStorage.getItem("users") || "{}");
+  users[teacherNameEl.textContent].classroomCode = code;
+  localStorage.setItem("users", JSON.stringify(users));
+
+  classroomCodeDisplay.textContent = `Classroom Code: ${code}`;
+  teacherClassroomName.textContent = classroomName;
+  teacherClassroomView.classList.remove("hidden");
+  currentClassroom = code;
+
+  updateTeacherDashboard();
+});
 // Drill Rendering
 function renderPrompt() {
   promptEl.innerHTML = "";
@@ -99,9 +155,8 @@ function loadDrill(index) {
 }
 
 // Typing Logic
-function onKeyDown(e) {
+document.addEventListener("keydown", (e) => {
   if (studentDashboard.classList.contains("hidden")) return;
-
   if (e.ctrlKey || e.altKey || e.metaKey) return;
 
   const spans = promptEl.querySelectorAll("span.char");
@@ -156,17 +211,65 @@ function onKeyDown(e) {
   if (cursorPos >= spans.length) {
     nextBtn.disabled = false;
   }
-}
+});
 
 // Next Drill
 nextBtn.addEventListener("click", () => {
+  const spans = promptEl.querySelectorAll("span.char");
+  const correct = Array.from(spans).filter(s => s.classList.contains("correct")).length;
+  const errors = Array.from(spans).filter(s => s.classList.contains("error")).length;
+  const total = spans.length;
+  const accuracy = Math.round((correct / total) * 100);
+
+  const users = JSON.parse(localStorage.getItem("users") || "{}");
+  const name = studentNameEl.textContent;
+  const user = users[name];
+
+  if (!user.progress[currentDate]) {
+    user.progress[currentDate] = [];
+  }
+
+  user.progress[currentDate].push({ drill: current, correct, errors, accuracy });
+  localStorage.setItem("users", JSON.stringify(users));
+
+  studentStats.innerHTML = `Drill ${current + 1} complete. Accuracy: ${accuracy}%. Errors: ${errors}`;
+
   if (current + 1 < drills.length) {
     loadDrill(current + 1);
   } else {
-    promptEl.textContent = "All drills complete—great work!";
+    promptEl.textContent = "You've completed your day's typing prompts!";
     nextBtn.style.display = "none";
   }
 });
 
-// Initialize key listener
-document.addEventListener("keydown", onKeyDown);
+// Teacher Dashboard Sorting
+sortOption.addEventListener("change", updateTeacherDashboard);
+
+function updateTeacherDashboard() {
+  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
+  const users = JSON.parse(localStorage.getItem("users") || "{}");
+  const classroom = classrooms[currentClassroom];
+  const students = Object.entries(users).filter(([name, data]) => data.role === "student" && data.classroomCode === currentClassroom);
+
+  let sortedStudents = students;
+  if (sortOption.value === "name") {
+    sortedStudents = students.sort((a, b) => {
+      const lastA = a[0].split(" ").slice(-1)[0].toLowerCase();
+      const lastB = b[0].split(" ").slice(-1)[0].toLowerCase();
+      return lastA.localeCompare(lastB);
+    });
+  }
+
+  let html = "<table><tr><th>Name</th><th>Date</th><th>Drills</th><th>Accuracy</th><th>Errors</th></tr>";
+  sortedStudents.forEach(([name, data]) => {
+    const progress = data.progress || {};
+    Object.entries(progress).forEach(([date, drills]) => {
+      const totalDrills = drills.length;
+      const avgAccuracy = Math.round(drills.reduce((sum, d) => sum + d.accuracy, 0) / totalDrills);
+      const totalErrors = drills.reduce((sum, d) => sum + d.errors, 0);
+      html += `<tr><td>${name}</td><td>${date}</td><td>${totalDrills}</td><td>${avgAccuracy}%</td><td>${totalErrors}</td></tr>`;
+    });
+  });
+  html += "</table>";
+  studentProgressTable.innerHTML = html;
+}

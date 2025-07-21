@@ -1,3 +1,4 @@
+
 // Drill sentences
 const drills = [
   "The quick brown fox jumps over the lazy dog.",
@@ -34,6 +35,17 @@ const teacherClassroomName = document.getElementById("teacher-classroom-name");
 const sortOption = document.getElementById("sort-option");
 const studentProgressTable = document.getElementById("student-progress-table");
 
+// Mode toggle
+let isSignUp = true;
+const toggleModeBtn = document.createElement("button");
+toggleModeBtn.textContent = "Switch to Log In";
+toggleModeBtn.addEventListener("click", () => {
+  isSignUp = !isSignUp;
+  toggleModeBtn.textContent = isSignUp ? "Switch to Log In" : "Switch to Sign Up";
+  loginBtn.textContent = isSignUp ? "Sign Up" : "Log In";
+});
+loginScreen.appendChild(toggleModeBtn);
+
 // State
 let current = 0;
 let cursorPos = 0;
@@ -46,14 +58,16 @@ function generateClassroomCode() {
   return "C" + Math.floor(100000 + Math.random() * 900000);
 }
 
-// Role toggle
-roleSelect.addEventListener("change", () => {
+// Ensure classroom code is visible by default for student
+function updateClassroomCodeVisibility() {
   if (roleSelect.value === "student") {
     studentClassroomCode.classList.remove("hidden");
   } else {
     studentClassroomCode.classList.add("hidden");
   }
-});
+}
+updateClassroomCodeVisibility();
+roleSelect.addEventListener("change", updateClassroomCodeVisibility);
 
 // Login
 loginBtn.addEventListener("click", () => {
@@ -69,23 +83,29 @@ loginBtn.addEventListener("click", () => {
 
   const users = JSON.parse(localStorage.getItem("users") || "{}");
 
-  if (users[name]) {
-    if (users[name].password === password && users[name].role === role) {
-      currentUser = users[name];
-      proceedToDashboard(name, role);
-    } else {
-      loginMessage.textContent = "Incorrect password or role.";
+  if (isSignUp) {
+    if (users[name]) {
+      loginMessage.textContent = "User already exists. Please log in.";
+      return;
     }
-  } else {
     if (role === "student") {
       const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
       if (!classrooms[classroomCode]) {
         loginMessage.textContent = "Invalid classroom code.";
         return;
       }
+      classrooms[classroomCode].students.push(name);
+      localStorage.setItem("classrooms", JSON.stringify(classrooms));
     }
     users[name] = { password, role, classroomCode, progress: {} };
     localStorage.setItem("users", JSON.stringify(users));
+    currentUser = users[name];
+    proceedToDashboard(name, role);
+  } else {
+    if (!users[name] || users[name].password !== password || users[name].role !== role) {
+      loginMessage.textContent = "Incorrect credentials.";
+      return;
+    }
     currentUser = users[name];
     proceedToDashboard(name, role);
   }
@@ -97,6 +117,20 @@ function proceedToDashboard(name, role) {
   if (role === "teacher") {
     teacherNameEl.textContent = name;
     teacherDashboard.classList.remove("hidden");
+
+    const user = JSON.parse(localStorage.getItem("users"))[name];
+    const code = user.classroomCode;
+    if (code) {
+      const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
+      const classroom = classrooms[code];
+      if (classroom) {
+        classroomCodeDisplay.textContent = `Classroom Code: ${code}`;
+        teacherClassroomName.textContent = classroom.name;
+        teacherClassroomView.classList.remove("hidden");
+        currentClassroom = code;
+        updateTeacherDashboard();
+      }
+    }
   } else {
     studentNameEl.textContent = name;
     studentDashboard.classList.remove("hidden");
@@ -145,6 +179,15 @@ function updateCurrentSpan() {
   }
 }
 
+function updateLiveStats() {
+  const spans = promptEl.querySelectorAll("span.char");
+  const correct = Array.from(spans).filter(s => s.classList.contains("correct")).length;
+  const errors = Array.from(spans).filter(s => s.classList.contains("error")).length;
+  const total = spans.length;
+  const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+  studentStats.innerHTML = `Accuracy: ${accuracy}% | Errors: ${errors}`;
+}
+
 function loadDrill(index) {
   current = index;
   cursorPos = 0;
@@ -153,6 +196,7 @@ function loadDrill(index) {
   feedbackEl.innerHTML = "";
   nextBtn.disabled = true;
   promptEl.focus();
+  updateLiveStats();
 }
 
 // Typing Logic
@@ -170,6 +214,7 @@ document.addEventListener("keydown", (e) => {
       updateCurrentSpan();
       feedbackEl.innerHTML = "";
       if (!nextBtn.disabled) nextBtn.disabled = true;
+      updateLiveStats();
     }
     return;
   }
@@ -208,6 +253,7 @@ document.addEventListener("keydown", (e) => {
 
   cursorPos++;
   updateCurrentSpan();
+  updateLiveStats();
 
   if (cursorPos >= spans.length) {
     nextBtn.disabled = false;

@@ -125,6 +125,7 @@ createClassroomBtn.addEventListener("click", () => {
 
   updateTeacherDashboard();
 });
+
 // Drill Rendering
 function renderPrompt() {
   promptEl.innerHTML = "";

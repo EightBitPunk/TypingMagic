@@ -1,8 +1,10 @@
+
 /* General layout */
 body {
   font-family: sans-serif;
-  max-width: 600px;
+  max-width: 700px;
   margin: 2rem auto;
+  padding: 1rem;
 }
 
 /* Hidden class for toggling views */
@@ -32,6 +34,79 @@ body {
 #login-message {
   margin-top: 0.5rem;
   color: red;
+}
+
+/* Classroom code input for students */
+#student-classroom-code {
+  margin-top: 0.5rem;
+}
+
+/* Teacher dashboard styles */
+#teacher-dashboard {
+  margin-top: 2rem;
+}
+
+#classroom-setup label {
+  display: block;
+  margin: 0.5rem 0;
+}
+
+#classroom-setup input {
+  margin-left: 0.5rem;
+  padding: 0.3rem;
+  font-size: 1rem;
+}
+
+#classroom-setup button {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+}
+
+#classroom-code-display {
+  margin-top: 0.5rem;
+  font-weight: bold;
+  color: green;
+}
+
+#teacher-classroom-view {
+  margin-top: 1rem;
+}
+
+#sort-option {
+  margin: 0.5rem 0;
+  padding: 0.3rem;
+}
+
+/* Student progress table */
+#student-progress-table {
+  margin-top: 1rem;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#student-progress-table table {
+  width: 100%;
+  border: 1px solid #ccc;
+}
+
+#student-progress-table th,
+#student-progress-table td {
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+#student-progress-table th {
+  background-color: #f0f0f0;
+}
+
+/* Student dashboard styles */
+#student-dashboard {
+  margin-top: 2rem;
+}
+
+#drill-container {
+  margin-top: 1rem;
 }
 
 /* Prompt area */
@@ -99,4 +174,10 @@ button {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
   font-size: 1rem;
+}
+
+/* Student stats */
+#student-stats {
+  margin-top: 1rem;
+  font-weight: bold;
 }

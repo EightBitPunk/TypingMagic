@@ -1,181 +1,205 @@
-// Version 0.0.3
-
-// Drill data per day
-const dailyDrills = {
-  "2025-07-22": [
-    "The fox sprinted quickly through the forest.",
-    "Typing every day improves muscle memory.",
-    "Accuracy is better than speed when learning."
-  ],
-  "2025-07-23": [
-    "Coding is a valuable skill in modern times.",
-    "Errors help you learn and improve faster.",
-    "Consistent practice leads to steady progress."
-  ],
-  "2025-07-24": [
-    "Never give up when a bug gets in your way.",
-    "Review and revise: the coder’s best tools.",
-    "Testing your code ensures quality results."
-  ],
-  "2025-07-25": [
-    "A great teacher inspires and challenges students.",
-    "Lessons are best retained when practiced often.",
-    "Learning to type well builds lifelong skills."
-  ]
-};
-
-// DOM Content Loaded
+// Version 0.0.4
 window.addEventListener("DOMContentLoaded", () => {
-  console.log("🔥 app.js loaded! DOMContentLoaded? ", document.readyState);
+  console.log("🔥 app.js v0.0.4 loaded");
 
-  const versionEl = document.createElement("div");
-  versionEl.textContent = "version 0.0.3";
-  versionEl.style.position = "fixed";
-  versionEl.style.bottom = "5px";
-  versionEl.style.right = "10px";
-  versionEl.style.fontSize = "0.8em";
-  versionEl.style.color = "gray";
-  document.body.appendChild(versionEl);
+  // show version
+  const v = document.createElement("div");
+  v.textContent = "version 0.0.4";
+  Object.assign(v.style, {
+    position: "fixed",
+    bottom: "5px",
+    right: "10px",
+    fontSize: "0.8em",
+    color: "gray",
+    pointerEvents: "none"
+  });
+  document.body.appendChild(v);
 
-  // Reinitialize all buttons and logic
   initApp();
 });
 
 function initApp() {
+  // Elements
   const loginScreen = document.getElementById("login-screen");
   const loginBtn = document.getElementById("login-btn");
-  const toggleModeBtn = document.getElementById("toggle-mode-btn") || document.createElement("button");
-  toggleModeBtn.id = "toggle-mode-btn";
-  toggleModeBtn.textContent = "Go to Sign Up";
-  if (!toggleModeBtn.parentElement) loginScreen.appendChild(toggleModeBtn);
+  let toggleBtn = document.getElementById("toggle-mode-btn");
+  if (!toggleBtn) {
+    toggleBtn = document.createElement("button");
+    toggleBtn.id = "toggle-mode-btn";
+    loginScreen.appendChild(toggleBtn);
+  }
+  const userIn = document.getElementById("username");
+  const passIn = document.getElementById("password");
+  const roleSel = document.getElementById("role");
+  const msg = document.getElementById("login-message");
+  const codeIn = document.getElementById("classroom-code");
+  const studentCodeWrap = document.getElementById("student-classroom-code");
 
-  const usernameInput = document.getElementById("username");
-  const passwordInput = document.getElementById("password");
-  const roleSelect = document.getElementById("role");
-  const loginMessage = document.getElementById("login-message");
-  const classroomCodeInput = document.getElementById("classroom-code");
-  const studentClassroomCode = document.getElementById("student-classroom-code");
-
-  const teacherDashboard = document.getElementById("teacher-dashboard");
-  const studentDashboard = document.getElementById("student-dashboard");
-  const teacherNameEl = document.getElementById("teacher-name");
-  const studentNameEl = document.getElementById("student-name");
+  const teacherDash = document.getElementById("teacher-dashboard");
+  const studentDash = document.getElementById("student-dashboard");
+  const teacherName = document.getElementById("teacher-name");
+  const studentName = document.getElementById("student-name");
+  const progressTbl = document.getElementById("student-progress-table");
 
   let isSignUp = false;
 
-  function updateModeUI() {
+  // mode toggle
+  function updateMode() {
     loginBtn.textContent = isSignUp ? "Sign Up" : "Log In";
-    toggleModeBtn.textContent = isSignUp ? "Go to Log In" : "Go to Sign Up";
-    const showClassroomCode = isSignUp && roleSelect.value === "student";
-    studentClassroomCode.classList.toggle("hidden", !showClassroomCode);
+    toggleBtn.textContent = isSignUp ? "Go to Log In" : "Go to Sign Up";
+    studentCodeWrap.classList.toggle("hidden", !(isSignUp && roleSel.value === "student"));
   }
+  toggleBtn.addEventListener("click", () => { isSignUp = !isSignUp; updateMode(); });
+  roleSel.addEventListener("change", updateMode);
+  updateMode();
 
-  toggleModeBtn.addEventListener("click", () => {
-    isSignUp = !isSignUp;
-    updateModeUI();
-  });
+  // storage helpers
+  const getUsers = () => JSON.parse(localStorage.getItem("users") || "{}");
+  const saveUsers = u => localStorage.setItem("users", JSON.stringify(u));
+  const getClasses = () => JSON.parse(localStorage.getItem("classrooms") || "{}");
+  const saveClasses = c => localStorage.setItem("classrooms", JSON.stringify(c));
 
-  roleSelect.addEventListener("change", updateModeUI);
-  updateModeUI();
-
+  // login/signup
   loginBtn.addEventListener("click", () => {
-    const name = usernameInput.value.trim();
-    const password = passwordInput.value;
-    const role = roleSelect.value;
-    const classroomCode = classroomCodeInput.value.trim();
-
-    if (!name || !password || (isSignUp && role === "student" && !classroomCode)) {
-      loginMessage.textContent = "Please fill in all required fields.";
+    msg.textContent = "";
+    const name = userIn.value.trim(), pw = passIn.value, role = roleSel.value, code = codeIn.value.trim();
+    if (!name || !pw || (isSignUp && role === "student" && !code)) {
+      msg.textContent = "Please fill all required fields.";
       return;
     }
-
-    const users = JSON.parse(localStorage.getItem("users") || "{}");
+    const users = getUsers();
 
     if (isSignUp) {
-      if (users[name]) {
-        loginMessage.textContent = "User already exists.";
-        return;
-      }
+      if (users[name]) { msg.textContent = "User exists."; return; }
+      users[name] = { password: pw, role, progress: {}, classrooms: [], classroomCode: role==="student"?code:undefined };
       if (role === "student") {
-        const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
-        if (!classrooms[classroomCode]) {
-          loginMessage.textContent = "Invalid classroom code.";
-          return;
-        }
-        classrooms[classroomCode].students.push(name);
-        localStorage.setItem("classrooms", JSON.stringify(classrooms));
+        const classes = getClasses();
+        if (!classes[code]) { msg.textContent = "Invalid code."; delete users[name]; return; }
+        classes[code].students.push(name);
+        saveClasses(classes);
       }
-      users[name] = { password, role, classroomCode, progress: {} };
-      localStorage.setItem("users", JSON.stringify(users));
-      proceedToDashboard(name, role);
+      saveUsers(users);
+      goDash(name, role);
+
     } else {
-      if (users[name] && users[name].password === password && users[name].role === role) {
-        proceedToDashboard(name, role);
+      if (users[name] && users[name].password === pw && users[name].role === role) {
+        goDash(name, role);
       } else {
-        loginMessage.textContent = "Incorrect credentials.";
+        msg.textContent = "Incorrect credentials.";
       }
     }
   });
 
-  function proceedToDashboard(name, role) {
+  function goDash(name, role) {
     loginScreen.classList.add("hidden");
-    const users = JSON.parse(localStorage.getItem("users") || "{}");
-    const currentUser = users[name];
-
+    const users = getUsers();
+    const me = users[name];
     if (role === "teacher") {
-      teacherNameEl.textContent = name;
-      teacherDashboard.classList.remove("hidden");
-      updateTeacherDashboard(name);
+      teacherName.textContent = name;
+      teacherDash.classList.remove("hidden");
+      showTeacher(name);
     } else {
-      studentNameEl.textContent = name;
-      studentDashboard.classList.remove("hidden");
-      // Load student drill UI based on today’s date
+      studentName.textContent = name;
+      studentDash.classList.remove("hidden");
+      showStudent(me.classroomCode, name);
     }
   }
 
-  function updateTeacherDashboard(teacherName) {
-    const users = JSON.parse(localStorage.getItem("users") || "{}");
-    const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
-    const teacherUser = users[teacherName];
-    const codes = teacherUser.classrooms || [];
-
+  function showTeacher(t) {
+    const users = getUsers(), classes = getClasses();
     let html = "";
-    codes.forEach(code => {
-      const classroom = classrooms[code];
-      if (!classroom) return;
-      html += `<h3>${classroom.name} (Code: ${code}) <span style="color:red; cursor:pointer;" data-code="${code}" class="delete-class">🗑️</span></h3>`;
-      html += "<table><tr><th>Student</th><th>Date</th><th>Drills</th><th>Accuracy</th><th>Errors</th></tr>";
-      classroom.students.forEach(studentName => {
-        const student = users[studentName];
-        if (!student || !student.progress) return;
-        Object.entries(student.progress).forEach(([date, drills]) => {
-          const totalDrills = drills.length;
-          const avgAccuracy = Math.round(drills.reduce((sum, d) => sum + d.accuracy, 0) / totalDrills);
-          const totalErrors = drills.reduce((sum, d) => sum + d.errors, 0);
-          html += `<tr><td>${studentName}</td><td>${date}</td><td>${totalDrills}</td><td>${avgAccuracy}%</td><td>${totalErrors}</td></tr>`;
+    (users[t].classrooms || []).forEach(code => {
+      const cls = classes[code];
+      if (!cls) return;
+      html += `<h3>${cls.name} (Code: ${code}) <span style="color:red;cursor:pointer;" data-code="${code}" class="del">🗑️</span></h3>`;
+      html += "<table><tr><th>Student</th><th>Date</th><th>#</th><th>Acc</th><th>Err</th></tr>";
+      cls.students.forEach(s => {
+        const prog = users[s].progress || {};
+        Object.entries(prog).forEach(([d, arr]) => {
+          const total = arr.length;
+          const acc = Math.round(arr.reduce((a,x)=>a+x.accuracy,0)/total);
+          const err = arr.reduce((a,x)=>a+x.errors,0);
+          html += `<tr><td>${s}</td><td>${d}</td><td>${total}</td><td>${acc}%</td><td>${err}</td></tr>`;
         });
       });
       html += "</table>";
     });
-
-    const tableContainer = document.getElementById("student-progress-table");
-    tableContainer.innerHTML = html;
-
-    document.querySelectorAll(".delete-class").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const code = btn.getAttribute("data-code");
-        if (confirm("Delete this class?")) {
-          const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
-          delete classrooms[code];
-          localStorage.setItem("classrooms", JSON.stringify(classrooms));
-
-          const users = JSON.parse(localStorage.getItem("users") || "{}");
-          users[teacherName].classrooms = users[teacherName].classrooms.filter(c => c !== code);
-          localStorage.setItem("users", JSON.stringify(users));
-
-          updateTeacherDashboard(teacherName);
-        }
-      });
+    progressTbl.innerHTML = html;
+    document.querySelectorAll(".del").forEach(btn=>{
+      btn.onclick = () => {
+        const code = btn.dataset.code;
+        if (!confirm("Delete class?")) return;
+        delete getClasses()[code];
+        const us = getUsers();
+        us[t].classrooms = us[t].classrooms.filter(c=>c!==code);
+        saveClasses(getClasses()); saveUsers(us);
+        showTeacher(t);
+      };
     });
+  }
+
+  function showStudent(code, name) {
+    const classes = getClasses();
+    const today = new Date().toISOString().split("T")[0];
+    const drills = classes[code]?.customDrills?.[today] || classes[code]?.drills || [
+      "The quick brown fox jumps over the lazy dog.",
+      "Typing practice improves both speed and accuracy.",
+      "Accuracy over speed."
+    ];
+
+    const promptEl = document.getElementById("prompt");
+    const fb = document.getElementById("feedback");
+    const nxt = document.getElementById("next-btn");
+    let idx = 0, pos = 0;
+
+    function load() {
+      promptEl.innerHTML = "";
+      drills[idx].split("").forEach(ch => {
+        const s = document.createElement("span");
+        s.className = "char"; s.textContent = ch;
+        promptEl.appendChild(s);
+      });
+      pos = 0; mark();
+      nxt.disabled = true; fb.textContent = "";
+    }
+
+    function mark() {
+      document.querySelectorAll(".char").forEach(c => c.classList.remove("current"));
+      document.querySelectorAll(".char")[pos]?.classList.add("current");
+    }
+
+    document.onkeydown = e => {
+      if (studentDash.classList.contains("hidden")) return;
+      if (e.key === "Backspace") {
+        e.preventDefault();
+        if (pos>0) {
+          pos--; document.querySelectorAll(".char")[pos].classList.remove("correct","error");
+          mark(); nxt.disabled = true; fb.textContent="";
+        }
+        return;
+      }
+      if (e.key.length !== 1 || pos >= drills[idx].length) { e.preventDefault(); return; }
+      const spans = document.querySelectorAll(".char");
+      spans[pos].classList.remove("current");
+      if (e.key === drills[idx][pos]) spans[pos].classList.add("correct");
+      else { spans[pos].classList.add("error"); fb.textContent = `Expected "${drills[idx][pos]}", got "${e.key}"`; }
+      pos++; mark();
+      if (pos >= spans.length) nxt.disabled = false;
+    };
+
+    nxt.onclick = () => {
+      const spans = document.querySelectorAll(".char");
+      const corr = [...spans].filter(s=>s.classList.contains("correct")).length;
+      const err = [...spans].filter(s=>s.classList.contains("error")).length;
+      const acc = Math.round((corr/spans.length)*100);
+      const us = getUsers();
+      us[name].progress[today] = us[name].progress[today]||[];
+      us[name].progress[today].push({ drill: idx, correct: corr, errors: err, accuracy: acc });
+      saveUsers(us);
+      if (idx+1 < drills.length) { idx++; load(); }
+      else { promptEl.textContent = "Done for today!"; nxt.style.display = "none"; }
+    };
+
+    load();
   }
 }

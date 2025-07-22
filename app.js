@@ -1,14 +1,14 @@
-// Version 0.1.5
+// Version 0.1.6
 
 window.addEventListener("DOMContentLoaded", () => {
-  console.log("🔥 app.js v0.1.5 loaded");
+  console.log("🔥 app.js v0.1.6 loaded");
   showVersion();
   initApp();
 });
 
 function showVersion() {
   const badge = document.createElement("div");
-  badge.textContent = "version 0.1.5";
+  badge.textContent = "version 0.1.6";
   Object.assign(badge.style, { position: "fixed", bottom: "5px", right: "10px", fontSize: "0.8em", color: "gray", pointerEvents: "none" });
   document.body.appendChild(badge);
 }
@@ -122,14 +122,19 @@ function initApp() {
   };
 
   function renderTeacher(teacher) {
-    const users = getUsers();
-    const classes = getClasses();
+    const users = getUsers(), classes = getClasses();
     let html = '';
     (users[teacher].classrooms || []).forEach(code => {
       const cls = classes[code]; if (!cls) return;
       html += `<h3>${cls.name} (Code: ${code}) ` +
-              `<button data-edit="${code}">Edit Drills</button> ` +
+              `<button class="edit-btn" data-code="${code}">Edit Drills</button> ` +
               `<span class='del' data-code='${code}' style='color:red;cursor:pointer;'>🗑️</span></h3>`;
+      html += `<div class="edit-container" data-code="${code}" style="display:none; margin-bottom:1em;">
+        <label>Date: <input type="date" class="edit-date"></label><br>
+        <textarea class="edit-text" rows="4" style="width:100%;"></textarea><br>
+        <label><input type="checkbox" class="apply-all"> Apply to all classes</label><br>
+        <button class="save-drills">Save</button> <button class="cancel-edit">Cancel</button>
+      </div>`;
       html += `<table><tr><th>Student</th><th>Date</th><th>Avg Acc</th><th>Errors</th></tr>`;
       cls.students.forEach(s => {
         const prog = users[s].progress || {};
@@ -143,42 +148,44 @@ function initApp() {
     });
     studentProgressTable.innerHTML = html;
 
-    // Edit Drills
-    document.querySelectorAll('[data-edit]').forEach(btn => {
-      btn.onclick = () => {
-        const code = btn.dataset.edit;
-        const date = prompt('Enter date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
-        if (!date) return;
-        const classesLocal = getClasses();
-        classesLocal[code].customDrills = classesLocal[code].customDrills || {};
-        const existing = classesLocal[code].customDrills[date] || classesLocal[code].drills;
-        const input = prompt(`Customize drills for ${date}. Separate with |`, existing.join('|'));
-        if (!input) return;
-        const newDrills = input.split('|');
-        const applyAll = confirm('Apply to ALL your classes for that date?');
+    // Edit Drills logic
+    document.querySelectorAll('.edit-btn').forEach(btn => btn.onclick = () => {
+      const code = btn.dataset.code;
+      const container = document.querySelector(`.edit-container[data-code="${code}"]`);
+      container.style.display = 'block';
+      const dateInput = container.querySelector('.edit-date');
+      const textArea = container.querySelector('.edit-text');
+      dateInput.value = new Date().toISOString().split('T')[0];
+      const date = dateInput.value;
+      const cls = classes[code];
+      const existing = cls.customDrills[date] || cls.drills;
+      textArea.value = existing.join('\n');
+
+      container.querySelector('.cancel-edit').onclick = () => { container.style.display = 'none'; };
+      container.querySelector('.save-drills').onclick = () => {
+        const newDate = dateInput.value;
+        const lines = textArea.value.split('\n').map(l => l.trim()).filter(Boolean);
+        const applyAll = container.querySelector('.apply-all').checked;
         if (applyAll) {
           users[teacher].classrooms.forEach(cid => {
-            classesLocal[cid].customDrills = classesLocal[cid].customDrills || {};
-            classesLocal[cid].customDrills[date] = newDrills;
+            classes[cid].customDrills[newDate] = lines;
           });
         } else {
-          classesLocal[code].customDrills[date] = newDrills;
+          cls.customDrills[newDate] = lines;
         }
-        saveClasses(classesLocal);
-        renderTeacher(teacher);
+        saveClasses(classes);
+        container.style.display = 'none';
       };
     });
 
     // Delete class
-    document.querySelectorAll('.del').forEach(btn => {
-      btn.onclick = () => {
-        const code = btn.dataset.code;
-        if (!confirm('Delete class?')) return;
-        const classesLocal = getClasses(); delete classesLocal[code]; saveClasses(classesLocal);
-        users[teacher].classrooms = users[teacher].classrooms.filter(c => c !== code);
-        saveUsers(users);
-        renderTeacher(teacher);
-      };
+    document.querySelectorAll('.del').forEach(btn => btn.onclick = () => {
+      const code = btn.dataset.code;
+      if (!confirm('Delete class?')) return;
+      const classesLocal = getClasses(); delete classesLocal[code]; saveClasses(classesLocal);
+      users[teacher].classrooms = users[teacher].classrooms.filter(c => c !== code);
+      saveUsers(users);
+      renderTeacher(teacher);
     });
   }
 
@@ -188,10 +195,7 @@ function initApp() {
     const drills = (classes[code]?.customDrills?.[today]) || classes[code]?.drills || defaultDrills;
     let idx = 0, pos = 0;
     let accEl = document.getElementById('accuracy-display');
-    if (!accEl) {
-      accEl = document.createElement('div'); accEl.id = 'accuracy-display'; accEl.style.margin = '0.5em 0';
-      studentDashboard.querySelector('#feedback').after(accEl);
-    }
+    if (!accEl) { accEl = document.createElement('div'); accEl.id = 'accuracy-display'; accEl.style.margin = '0.5em 0'; studentDashboard.querySelector('#feedback').after(accEl); }
     function updateAcc() {
       const spans = document.querySelectorAll('.char');
       const errors = [...spans].filter(s => s.classList.contains('error')).length;
@@ -204,10 +208,7 @@ function initApp() {
       drills[idx].split('').forEach(ch => { const span = document.createElement('span'); span.className = 'char'; span.textContent = ch; promptEl.appendChild(span); });
       pos = 0; mark(); feedbackEl.textContent = ''; nextBtn.disabled = true; accEl.textContent = 'Accuracy: 100%';
     }
-    function mark() {
-      document.querySelectorAll('.char').forEach(c => c.classList.remove('current'));
-      document.querySelectorAll('.char')[pos]?.classList.add('current');
-    }
+    function mark() { document.querySelectorAll('.char').forEach(c => c.classList.remove('current')); document.querySelectorAll('.char')[pos]?.classList.add('current'); }
     document.onkeydown = e => {
       if (studentDashboard.classList.contains('hidden')) return;
       if (e.key === 'Backspace') { e.preventDefault(); if (pos > 0) { pos--; const spans = document.querySelectorAll('.char'); spans[pos].classList.remove('correct', 'error'); mark(); updateAcc(); nextBtn.disabled = true; } return; }
@@ -218,10 +219,8 @@ function initApp() {
       pos++; mark(); updateAcc(); if (pos >= spans.length) nextBtn.disabled = false;
     };
     nextBtn.onclick = () => {
-      const spans = document.querySelectorAll('.char');
-      const corr = [...spans].filter(s => s.classList.contains('correct')).length;
-      const err = [...spans].filter(s => s.classList.contains('error')).length;
-      const acc = Math.max(0, Math.round((corr / spans.length) * 100));
+      const spans = document.querySelectorAll('.char'); const corr = [...spans].filter(s => s.classList.contains('correct')).length;
+      const err = [...spans].filter(s => s.classList.contains('error')).length; const acc = Math.max(0, Math.round((corr / spans.length) * 100));
       const users = getUsers(); users[student].progress[today] = users[student].progress[today] || [];
       users[student].progress[today].push({ drill: idx, correct: corr, errors: err, accuracy: acc }); saveUsers(users);
       if (idx + 1 < drills.length) { idx++; load(); } else { promptEl.textContent = 'Done!'; nextBtn.style.display = 'none'; }

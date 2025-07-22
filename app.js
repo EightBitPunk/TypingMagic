@@ -1,22 +1,32 @@
-// Version 0.0.8
+// Version 0.0.9
 window.addEventListener("DOMContentLoaded", () => {
-  console.log("🔥 app.js v0.0.8 loaded");
+  console.log("🔥 app.js v0.0.9 loaded");
   showVersion();
   initApp();
 });
 
 function showVersion() {
-  const v = document.createElement("div");
-  v.textContent = "version 0.0.8";
-  Object.assign(v.style, {
-    position: "fixed", bottom: "5px", right: "10px",
-    fontSize: "0.8em", color: "gray", pointerEvents: "none"
+  const badge = document.createElement("div");
+  badge.textContent = "version 0.0.9";
+  Object.assign(badge.style, {
+    position: "fixed",
+    bottom: "5px",
+    right: "10px",
+    fontSize: "0.8em",
+    color: "gray",
+    pointerEvents: "none"
   });
-  document.body.appendChild(v);
+  document.body.appendChild(badge);
 }
 
 function initApp() {
-  // Elements
+  const defaultDrills = [
+    "The quick brown fox jumps over the lazy dog.",
+    "Typing practice improves both speed and accuracy.",
+    "Accuracy over speed."
+  ];
+
+  // Element refs
   const loginScreen = document.getElementById("login-screen");
   const loginBtn = document.getElementById("login-btn");
   let toggleBtn = document.getElementById("toggle-mode-btn");
@@ -38,9 +48,8 @@ function initApp() {
   const createClassBtn = document.getElementById("create-classroom-btn");
   const newClassIn = document.getElementById("new-classroom-name");
   const codeDisplay = document.getElementById("classroom-code-display");
-
-  const teacherNameEl = document.getElementById("teacher-name");
   const studentProgressTable = document.getElementById("student-progress-table");
+  const teacherNameEl = document.getElementById("teacher-name");
 
   const studentDashboard = document.getElementById("student-dashboard");
   const studentNameEl = document.getElementById("student-name");
@@ -50,7 +59,7 @@ function initApp() {
 
   let isSignUp = false;
 
-  // UI Mode
+  // Toggle Log In/Sign Up
   function updateMode() {
     loginBtn.textContent = isSignUp ? "Sign Up" : "Log In";
     toggleBtn.textContent = isSignUp ? "Go to Log In" : "Go to Sign Up";
@@ -66,7 +75,7 @@ function initApp() {
   const getClasses = () => JSON.parse(localStorage.getItem("classrooms") || "{}");
   const saveClasses = c => localStorage.setItem("classrooms", JSON.stringify(c));
 
-  // Login/Sign-up
+  // Login/Sign Up handler
   loginBtn.onclick = () => {
     msg.textContent = "";
     const name = userIn.value.trim();
@@ -112,12 +121,12 @@ function initApp() {
     }
   }
 
-  // Create class
+  // Create Classroom
   createClassBtn.onclick = () => {
     const cname = newClassIn.value.trim(); if (!cname) return;
     const code = 'C' + Math.floor(100000 + Math.random() * 900000);
     const classes = getClasses();
-    classes[code] = { name: cname, teacher: teacherNameEl.textContent, students: [], drills: [], customDrills: {} };
+    classes[code] = { name: cname, teacher: teacherNameEl.textContent, students: [], drills: defaultDrills.slice(), customDrills: {} };
     saveClasses(classes);
     const users = getUsers();
     users[teacherNameEl.textContent].classrooms.push(code);
@@ -126,10 +135,9 @@ function initApp() {
     renderTeacher(teacherNameEl.textContent);
   };
 
-  // Render teacher
+  // Render Teacher Dashboard
   function renderTeacher(teacher) {
-    const classes = getClasses();
-    const users = getUsers();
+    const classes = getClasses(); const users = getUsers();
     let html = '';
     (users[teacher].classrooms || []).forEach(code => {
       const cls = classes[code]; if (!cls) return;
@@ -139,9 +147,9 @@ function initApp() {
         const prog = users[s].progress || {};
         Object.entries(prog).forEach(([d, arr]) => {
           const total = arr.length;
-          const acc = Math.round(arr.reduce((a, x) => a + x.accuracy, 0) / total);
-          const err = arr.reduce((a, x) => a + x.errors, 0);
-          html += `<tr><td>${s}</td><td>${d}</td><td>${total}</td><td>${acc}%</td><td>${err}</td></tr>`;
+          const errCount = arr.reduce((a, x) => a + x.errors, 0);
+          const acc = Math.round(((total) - errCount) / total * 100);
+          html += `<tr><td>${s}</td><td>${d}</td><td>${total}</td><td>${acc}%</td><td>${errCount}</td></tr>`;
         });
       });
       html += `</table>`;
@@ -160,51 +168,67 @@ function initApp() {
     });
   }
 
-  // Render student
+  // Render Student Drills
   function renderStudent(code, student) {
     const classes = getClasses();
     const today = new Date().toISOString().split('T')[0];
-    const drills = (classes[code]?.customDrills?.[today]) || classes[code]?.drills || [
-      "The quick brown fox jumps over the lazy dog.",
-      "Typing practice improves both speed and accuracy.",
-      "Accuracy over speed."
-    ];
+    const drills = (classes[code]?.customDrills?.[today]) || classes[code]?.drills || defaultDrills;
     let idx = 0, pos = 0;
-    function load() {
+    // create accuracy display
+    let accuracyEl = document.getElementById('accuracy-display');
+    if (!accuracyEl) {
+      accuracyEl = document.createElement('div');
+      accuracyEl.id = 'accuracy-display';
+      accuracyEl.style.marginTop = '0.5em';
+      studentDashboard.querySelector('#feedback').insertAdjacentElement('afterend', accuracyEl);
+    }
+    function updateAccuracy() {
+      const spans = document.querySelectorAll('.char');
+      const errors = [...spans].filter(s => s.classList.contains('error')).length;
+      const total = spans.length;
+      const acc = Math.round(((total - errors) / total) * 100);
+      accuracyEl.textContent = `Accuracy: ${acc}%`;
+    }
+    function loadDrill() {
       promptEl.innerHTML = '';
       drills[idx].split('').forEach(ch => {
-        const sp = document.createElement('span'); sp.className = 'char'; sp.textContent = ch;
-        promptEl.appendChild(sp);
+        const span = document.createElement('span'); span.className = 'char'; span.textContent = ch;
+        promptEl.appendChild(span);
       });
-      pos = 0; mark(); nextBtn.disabled = true; feedbackEl.textContent = '';
+      pos = 0; markCurrent(); feedbackEl.textContent = '';
+      nextBtn.disabled = true; accuracyEl.textContent = 'Accuracy: 100%';
     }
-    function mark() {
+    function markCurrent() {
       document.querySelectorAll('.char').forEach(c => c.classList.remove('current'));
       document.querySelectorAll('.char')[pos]?.classList.add('current');
     }
     document.onkeydown = e => {
       if (studentDashboard.classList.contains('hidden')) return;
       if (e.key === 'Backspace') {
-        e.preventDefault();
-        if (pos > 0) { pos--; document.querySelectorAll('.char')[pos].classList.remove('correct','error'); mark(); nextBtn.disabled=true; }
-        return;
+        e.preventDefault(); if (pos > 0) {
+          pos--; const spans = document.querySelectorAll('.char'); spans[pos].classList.remove('correct','error'); markCurrent();
+          updateAccuracy(); nextBtn.disabled = true;
+        } return;
       }
-      if (e.key.length!==1 || pos>=drills[idx].length) { e.preventDefault(); return; }
+      if (e.key.length !== 1 || pos >= drills[idx].length) { e.preventDefault(); return; }
       const spans = document.querySelectorAll('.char'); spans[pos].classList.remove('current');
-      if (e.key===drills[idx][pos]) spans[pos].classList.add('correct'); else { spans[pos].classList.add('error'); feedbackEl.textContent = `Expected "${drills[idx][pos]}", got "${e.key}"`; }
-      pos++; mark(); if (pos>=spans.length) nextBtn.disabled=false;
+      if (e.key === drills[idx][pos]) {
+        spans[pos].classList.add('correct'); feedbackEl.textContent = '';
+      } else {
+        spans[pos].classList.add('error'); feedbackEl.textContent = `Expected \"${drills[idx][pos]}\", got \"${e.key}\"`;
+      }
+      pos++; markCurrent(); updateAccuracy(); if (pos >= spans.length) nextBtn.disabled = false;
     };
     nextBtn.onclick = () => {
       const spans = document.querySelectorAll('.char');
-      const corr = [...spans].filter(s=>s.classList.contains('correct')).length;
-      const err = [...spans].filter(s=>s.classList.contains('error')).length;
-      const acc = Math.round((corr/spans.length)*100);
-      const users = getUsers();
-      users[student].progress[today] = users[student].progress[today]||[];
-      users[student].progress[today].push({drill:idx,correct:corr,errors:err,accuracy:acc});
+      const corr = [...spans].filter(s => s.classList.contains('correct')).length;
+      const err = [...spans].filter(s => s.classList.contains('error')).length;
+      const acc = Math.round((corr / spans.length) * 100);
+      const users = getUsers(); users[student].progress[today] = users[student].progress[today] || [];
+      users[student].progress[today].push({drill: idx, correct: corr, errors: err, accuracy: acc});
       saveUsers(users);
-      if (idx+1<drills.length) { idx++; load(); } else { promptEl.textContent = "Done for today!"; nextBtn.style.display='none'; }
+      if (idx + 1 < drills.length) { idx++; loadDrill(); } else { promptEl.textContent = 'Done for today!'; nextBtn.style.display = 'none'; }
     };
-    load();
+    loadDrill();
   }
 }

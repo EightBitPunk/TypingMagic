@@ -1,5 +1,5 @@
 // Version
-const VERSION = "0.0.3";
+const VERSION = "0.0.2";
 
 // Drill bank by date
 const dailyDrills = {

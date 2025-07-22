@@ -1,15 +1,25 @@
-// Version 0.1.10 - reverted to 0.1.6 baseline and prepping Edit Drills fixes
+// Version 0.1.11
 
 window.addEventListener("DOMContentLoaded", () => {
-  console.log("🔥 app.js v0.1.10 loaded");
   showVersion();
   initApp();
+  console.log("🔥 app.js v0.1.11 loaded");
 });
 
 function showVersion() {
   const badge = document.createElement("div");
-  badge.textContent = "version 0.1.10";
-  Object.assign(badge.style, { position: "fixed", bottom: "5px", right: "10px", fontSize: "0.8em", color: "gray", pointerEvents: "none" });
+  badge.textContent = "version 0.1.11";
+  Object.assign(badge.style, {
+    position: "fixed",
+    bottom: "5px",
+    right: "10px",
+    fontSize: "0.8em",
+    color: "gray",
+    background: "rgba(255,255,255,0.8)",
+    padding: "2px 5px",
+    borderRadius: "3px",
+    pointerEvents: "none"
+  });
   document.body.appendChild(badge);
 }
 
@@ -20,11 +30,15 @@ function initApp() {
     "Accuracy over speed."
   ];
 
-  // DOM refs
+  // DOM references
   const loginScreen = document.getElementById("login-screen");
   const loginBtn = document.getElementById("login-btn");
   let toggleBtn = document.getElementById("toggle-mode-btn");
-  if (!toggleBtn) { toggleBtn = document.createElement("button"); toggleBtn.id = "toggle-mode-btn"; loginScreen.appendChild(toggleBtn); }
+  if (!toggleBtn) {
+    toggleBtn = document.createElement("button");
+    toggleBtn.id = "toggle-mode-btn";
+    loginScreen.appendChild(toggleBtn);
+  }
   const userIn = document.getElementById("username");
   const passIn = document.getElementById("password");
   const roleSel = document.getElementById("role");
@@ -64,119 +78,133 @@ function initApp() {
 
   loginBtn.onclick = () => {
     msg.textContent = "";
-    const name = userIn.value.trim(), pw = passIn.value, role = roleSel.value, clsCode = codeIn.value.trim();
+    const name = userIn.value.trim();
+    const pw = passIn.value;
+    const role = roleSel.value;
+    const clsCode = codeIn.value.trim();
     if (name === 'KEFKA' && pw === 'SUCKS') { enterAdmin(); return; }
-    if (!name || !pw || (isSignUp && role === 'student' && !clsCode)) { msg.textContent = 'Complete all fields.'; return; }
+    if (!name || !pw || (isSignUp && role === 'student' && !clsCode)) {
+      msg.textContent = 'Please complete all fields.';
+      return;
+    }
     const users = getUsers();
     if (isSignUp) {
       if (users[name]) { msg.textContent = 'User exists.'; return; }
-      users[name] = { password: pw, role, progress: {}, classrooms: role==='teacher'?[]:undefined, classroomCode: role==='student'?clsCode:undefined };
-      if (role==='student') { const classes = getClasses(); classes[clsCode].students.push(name); saveClasses(classes); }
-      saveUsers(users); enterDashboard(name, role); return;
+      users[name] = { password: pw, role, progress: {}, classrooms: role === 'teacher' ? [] : undefined, classroomCode: role === 'student' ? clsCode : undefined };
+      if (role === 'student') {
+        const classes = getClasses();
+        if (!classes[clsCode]) { msg.textContent = 'Invalid code.'; delete users[name]; return; }
+        classes[clsCode].students.push(name);
+        saveClasses(classes);
+      }
+      saveUsers(users);
+      enterDashboard(name, role);
+    } else {
+      if (users[name] && users[name].password === pw && users[name].role === role) {
+        enterDashboard(name, role);
+      } else {
+        msg.textContent = 'Incorrect credentials.';
+      }
     }
-    if (users[name] && users[name].password === pw && users[name].role === role) enterDashboard(name, role);
-    else msg.textContent = 'Incorrect credentials.';
   };
 
   function enterDashboard(name, role) {
     loginScreen.classList.add('hidden');
-    if (role==='teacher'){
+    if (role === 'teacher') {
       teacherNameEl.textContent = name;
-      teacherDashboard.classList.remove('hidden'); classroomSetup.classList.remove('hidden'); teacherClassroomView.classList.remove('hidden');
+      teacherDashboard.classList.remove('hidden');
+      classroomSetup.classList.remove('hidden');
+      teacherClassroomView.classList.remove('hidden');
       renderTeacher(name);
     } else {
-      studentNameEl.textContent = name; studentDashboard.classList.remove('hidden'); renderStudent(getUsers()[name].classroomCode, name);
+      studentNameEl.textContent = name;
+      studentDashboard.classList.remove('hidden');
+      renderStudent(getUsers()[name].classroomCode, name);
     }
   }
 
   createClassBtn.onclick = () => {
-    const cname = newClassIn.value.trim(); if(!cname)return;
-    const code = 'C'+Math.floor(100000+Math.random()*900000);
-    const classes = getClasses(); classes[code] = { name:cname, teacher:teacherNameEl.textContent, students:[], drills:defaultDrills.slice(), customDrills:{} };
+    const cname = newClassIn.value.trim();
+    if (!cname) return;
+    const code = 'C' + Math.floor(100000 + Math.random() * 900000);
+    const classes = getClasses();
+    classes[code] = { name: cname, teacher: teacherNameEl.textContent, students: [], drills: defaultDrills.slice(), customDrills: {} };
     saveClasses(classes);
-    const users = getUsers(); users[teacherNameEl.textContent].classrooms.push(code); saveUsers(users);
-    codeDisplay.textContent = `New Code: ${code}`; renderTeacher(teacherNameEl.textContent);
+    const users = getUsers();
+    users[teacherNameEl.textContent].classrooms.push(code);
+    saveUsers(users);
+    codeDisplay.textContent = `New Code: ${code}`;
+    renderTeacher(teacherNameEl.textContent);
   };
 
   function renderTeacher(teacher) {
-    const users = getUsers(), classes = getClasses(); let html='';
-    (users[teacher].classrooms||[]).forEach(code=>{
-      const cls = classes[code]; if(!cls) return;
-      html += `<h3>${cls.name} (Code: ${code}) <button data-date='${code}'>Edit by Date</button> <span class='del' data-code='${code}' style='color:red;cursor:pointer;'>🗑️</span></h3>`;
-      html += `<div id='editor-${code}' style='display:none; margin-bottom:1em; background:#f9f9f9; padding:1em; border:1px solid #ccc;'>
-        <label>Select Date: <select id='date-select-${code}'></select></label><br>
-        <textarea id='drill-text-${code}' rows='4' style='width:100%;'></textarea><br>
-        <label><input type='checkbox' id='apply-all-${code}'> Apply to all classes</label><br>
-        <button id='save-${code}'>Save</button> <button id='cancel-${code}'>Cancel</button>
-      </div>`;
-      html += `<table><tr><th>Student</th><th>Date</th><th>#Drills</th><th>Acc</th><th>Err</th></tr>`;
-      cls.students.forEach(s=>{
-        const prog = users[s].progress||{};
-        Object.entries(prog).forEach(([d,arr])=>{
+    const users = getUsers();
+    const classes = getClasses();
+    let html = '';
+    (users[teacher].classrooms || []).forEach(code => {
+      const cls = classes[code]; if (!cls) return;
+      html += `<h3>${cls.name} (Code: ${code})</h3>`;
+      html += `<table><tr><th>Student</th><th>Drills</th><th>Accuracy</th><th>Errors</th></tr>`;
+      cls.students.forEach(s => {
+        const prog = users[s].progress || {};
+        Object.entries(prog).forEach(([d, arr]) => {
           const total = arr.length;
-          const avg = Math.round(arr.reduce((a,x)=>a+x.accuracy,0)/total);
-          const err = arr.reduce((a,x)=>a+x.errors,0);
-          html += `<tr><td>${s}</td><td>${d}</td><td>${total}</td><td>${avg}%</td><td>${err}</td></tr>`;
+          const avg = arr.length ? Math.round(arr.reduce((a, x) => a + x.accuracy, 0) / arr.length) : 0;
+          const err = arr.reduce((a, x) => a + x.errors, 0);
+          html += `<tr><td>${s} on ${d}</td><td>${total}</td><td>${avg}%</td><td>${err}</td></tr>`;
         });
-      }); html+='</table>';
+      });
+      html += `</table>`;
     });
     studentProgressTable.innerHTML = html;
-
-    // Edit by date
-    users[teacher].classrooms.forEach(code => {
-      const btn = document.querySelector(`[data-date='${code}']`);
-      const editor = document.getElementById(`editor-${code}`);
-      const dateSelect = document.getElementById(`date-select-${code}`);
-      const textArea = document.getElementById(`drill-text-${code}`);
-      const saveBtn = document.getElementById(`save-${code}`);
-      const cancelBtn = document.getElementById(`cancel-${code}`);
-      btn.onclick = () => {
-        editor.style.display = 'block';
-        // populate dates (last 7 days)
-        dateSelect.innerHTML = '';
-        for (let i=0; i<7; i++) {
-          const dt = new Date(); dt.setDate(dt.getDate()-i);
-          const ds = dt.toISOString().split('T')[0];
-          const opt = document.createElement('option'); opt.value=ds; opt.textContent=ds;
-          dateSelect.appendChild(opt);
-        }
-        const sel = dateSelect.value;
-        const existing = classes[code].customDrills[sel] || classes[code].drills;
-        textArea.value = existing.join('\n');
-      };
-      cancelBtn.onclick = () => { editor.style.display = 'none'; };
-      saveBtn.onclick = () => {
-        const sel = dateSelect.value;
-        const lines = textArea.value.split('\n').map(l=>l.trim()).filter(Boolean);
-        const applyAll = document.getElementById(`apply-all-${code}`).checked;
-        const classesLocal = getClasses();
-        if (applyAll) {
-          users[teacher].classrooms.forEach(cid => {
-            classesLocal[cid].customDrills = classesLocal[cid].customDrills || {};
-            classesLocal[cid].customDrills[sel] = lines;
-          });
-        } else {
-          classesLocal[code].customDrills = classesLocal[code].customDrills || {};
-          classesLocal[code].customDrills[sel] = lines;
-        }
-        saveClasses(classesLocal);
-        editor.style.display = 'none';
-      };
-    });
-
-    // Delete
-    document.querySelectorAll('.del').forEach(btn=>btn.onclick=()=>{
-      const code = btn.dataset.code; if(!confirm('Delete class?')) return;
-      const classesLocal = getClasses(); delete classesLocal[code]; saveClasses(classesLocal);
-      const users = getUsers(); users[teacher].classrooms = users[teacher].classrooms.filter(c=>c!==code); saveUsers(users);
-      renderTeacher(teacher);
-    });
   }
 
   function renderStudent(code, student) {
-    // unchanged from 0.1.6
+    const classes = getClasses();
+    const today = new Date().toISOString().split('T')[0];
+    const drills = (classes[code]?.customDrills?.[today]) || classes[code]?.drills || defaultDrills;
+    let idx = 0, pos = 0;
+    let accEl = document.getElementById('accuracy-display');
+    if (!accEl) {
+      accEl = document.createElement('div'); accEl.id = 'accuracy-display'; accEl.style.margin = '0.5em 0';
+      studentDashboard.querySelector('#feedback').after(accEl);
+    }
+    function updateAcc() {
+      const spans = document.querySelectorAll('.char');
+      const errors = [...spans].filter(s => s.classList.contains('error')).length;
+      const total = spans.length;
+      accEl.textContent = `Accuracy: ${Math.max(0, Math.round((total - errors) / total * 100))}%`;
+    }
+    function load() {
+      promptEl.innerHTML = '';
+      drills[idx].split('').forEach(ch => { const span = document.createElement('span'); span.className = 'char'; span.textContent = ch; promptEl.appendChild(span); });
+      pos = 0; mark(); feedbackEl.textContent = ''; nextBtn.disabled = true; accEl.textContent = 'Accuracy: 100%';
+    }
+    function mark() {
+      document.querySelectorAll('.char').forEach(c => c.classList.remove('current'));
+      document.querySelectorAll('.char')[pos]?.classList.add('current');
+    }
+    document.onkeydown = e => {
+      if (studentDashboard.classList.contains('hidden')) return;
+      if (e.key === 'Backspace') { e.preventDefault(); if (pos > 0) { pos--; const spans = document.querySelectorAll('.char'); spans[pos].classList.remove('correct', 'error'); mark(); updateAcc(); nextBtn.disabled = true; } return; }
+      if (e.key.length !== 1 || pos >= drills[idx].length) { e.preventDefault(); return; }
+      const spans = document.querySelectorAll('.char'); spans[pos].classList.remove('current');
+      if (e.key === drills[idx][pos]) { spans[pos].classList.add('correct'); feedbackEl.textContent = ''; }
+      else { spans[pos].classList.add('error'); feedbackEl.textContent = `Expected "${drills[idx][pos]}" got "${e.key}"`; }
+      pos++; mark(); updateAcc(); if (pos >= spans.length) nextBtn.disabled = false;
+    };
+    nextBtn.onclick = () => {
+      const spans = document.querySelectorAll('.char'); const corr = [...spans].filter(s => s.classList.contains('correct')).length;
+      const err = [...spans].filter(s => s.classList.contains('error')).length; const acc = Math.max(0, Math.round((corr / spans.length) * 100));
+      const users = getUsers();
+      users[student].progress[today] = users[student].progress[today] || [];
+      users[student].progress[today].push({ drill: idx, correct: corr, errors: err, accuracy: acc });
+      saveUsers(users);
+      if (idx + 1 < drills.length) { idx++; load(); } else { promptEl.textContent = 'Done!'; nextBtn.style.display = 'none'; }
+    };
+    load();
   }
 
-  function enterAdmin() { /* unchanged */ }
-  function renderAdmin() { /* unchanged */ }
+  function enterAdmin() {}
+  function renderAdmin() {}
 }

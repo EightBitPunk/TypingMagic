@@ -1,13 +1,14 @@
-// Version 0.1.3
+// Version 0.1.4
+
 window.addEventListener("DOMContentLoaded", () => {
-  console.log("🔥 app.js v0.1.3 loaded");
+  console.log("🔥 app.js v0.1.4 loaded");
   showVersion();
   initApp();
 });
 
 function showVersion() {
   const badge = document.createElement("div");
-  badge.textContent = "version 0.1.3";
+  badge.textContent = "version 0.1.4";
   Object.assign(badge.style, { position: "fixed", bottom: "5px", right: "10px", fontSize: "0.8em", color: "gray", pointerEvents: "none" });
   document.body.appendChild(badge);
 }
@@ -18,12 +19,14 @@ function initApp() {
     "Typing practice improves both speed and accuracy.",
     "Accuracy over speed."
   ];
-
-  // DOM references
+  
+  // DOM refs
   const loginScreen = document.getElementById("login-screen");
   const loginBtn = document.getElementById("login-btn");
   let toggleBtn = document.getElementById("toggle-mode-btn");
-  if (!toggleBtn) { toggleBtn = document.createElement("button"); toggleBtn.id = "toggle-mode-btn"; loginScreen.appendChild(toggleBtn); }
+  if (!toggleBtn) {
+    toggleBtn = document.createElement("button"); toggleBtn.id = "toggle-mode-btn"; loginScreen.appendChild(toggleBtn);
+  }
   const userIn = document.getElementById("username");
   const passIn = document.getElementById("password");
   const roleSel = document.getElementById("role");
@@ -47,8 +50,6 @@ function initApp() {
   const nextBtn = document.getElementById("next-btn");
 
   let isSignUp = false;
-
-  // Toggle UI mode
   function updateMode() {
     loginBtn.textContent = isSignUp ? "Sign Up" : "Log In";
     toggleBtn.textContent = isSignUp ? "Go to Log In" : "Go to Sign Up";
@@ -58,30 +59,23 @@ function initApp() {
   roleSel.onchange = updateMode;
   updateMode();
 
-  // Storage helpers
   const getUsers = () => JSON.parse(localStorage.getItem("users") || "{}");
   const saveUsers = u => localStorage.setItem("users", JSON.stringify(u));
   const getClasses = () => JSON.parse(localStorage.getItem("classrooms") || "{}");
   const saveClasses = c => localStorage.setItem("classrooms", JSON.stringify(c));
 
-  // Login / Sign Up
   loginBtn.onclick = () => {
     msg.textContent = "";
     const name = userIn.value.trim();
     const pw = passIn.value;
     const role = roleSel.value;
     const clsCode = codeIn.value.trim();
-
-    // Admin
-    if (name === 'KEFKA' && pw === 'SUCKS') { return enterAdmin(); }
-
+    if (name === 'KEFKA' && pw === 'SUCKS') { enterAdmin(); return; }
     if (!name || !pw || (isSignUp && role === 'student' && !clsCode)) {
       msg.textContent = 'Please complete all required fields.';
       return;
     }
-
     const users = getUsers();
-
     if (isSignUp) {
       if (users[name]) { msg.textContent = 'User already exists.'; return; }
       users[name] = { password: pw, role, progress: {}, classrooms: role === 'teacher' ? [] : undefined, classroomCode: role === 'student' ? clsCode : undefined };
@@ -94,10 +88,8 @@ function initApp() {
       saveUsers(users);
       return enterDashboard(name, role);
     }
-
-    // Log in existing
     if (users[name] && users[name].password === pw && users[name].role === role) {
-      return enterDashboard(name, role);
+      enterDashboard(name, role);
     } else {
       msg.textContent = 'Incorrect credentials.';
     }
@@ -118,7 +110,6 @@ function initApp() {
     }
   }
 
-  // Create classroom
   createClassBtn.onclick = () => {
     const cname = newClassIn.value.trim(); if (!cname) return;
     const code = 'C' + Math.floor(100000 + Math.random() * 900000);
@@ -132,14 +123,12 @@ function initApp() {
     renderTeacher(teacherNameEl.textContent);
   };
 
-  // Render Teacher
   function renderTeacher(teacher) {
-    const classes = getClasses();
-    const users = getUsers();
+    const classes = getClasses(), users = getUsers();
     let html = '';
     (users[teacher].classrooms || []).forEach(code => {
       const cls = classes[code]; if (!cls) return;
-      html += `<h3>${cls.name} (Code: ${code}) <span class='del' data-code='${code}' style='color:red;cursor:pointer;'>🗑️</span></h3>`;
+      html += `<h3>${cls.name} (Code: ${code}) <button data-edit="${code}">Edit Drills</button> <span class='del' data-code='${code}' style='color:red;cursor:pointer;'>🗑️</span></h3>`;
       html += `<table><tr><th>Student</th><th>Date</th><th>Avg Acc</th><th>Errors</th></tr>`;
       cls.students.forEach(s => {
         const prog = users[s].progress || {};
@@ -152,19 +141,36 @@ function initApp() {
       html += `</table>`;
     });
     studentProgressTable.innerHTML = html;
+    // Edit drill listeners
+    document.querySelectorAll('[data-edit]').forEach(btn => btn.onclick = () => {
+      const code = btn.dataset.edit;
+      const date = prompt('Enter date to customize drills (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
+      if (!date) return;
+      const existing = classes[code].customDrills[date] || classes[code].drills;
+      const input = prompt(`Customize drills for ${date}. Separate lines with |`, existing.join('|'));
+      if (!input) return;
+      const newDrills = input.split('|');
+      const applyAll = confirm('Apply to ALL your classes for that date?');
+      if (applyAll) {
+        users[teacher].classrooms.forEach(cid => {
+          classes[cid].customDrills[date] = newDrills;
+        });
+      } else {
+        classes[code].customDrills[date] = newDrills;
+      }
+      saveClasses(classes);
+      renderTeacher(teacher);
+    });
+    // Delete buttons
     document.querySelectorAll('.del').forEach(btn => btn.onclick = () => {
       const code = btn.dataset.code;
       if (!confirm('Delete class?')) return;
-      const all = getClasses();
-      delete all[code]; saveClasses(all);
-      const users = getUsers();
-      users[teacher].classrooms = users[teacher].classrooms.filter(c => c !== code);
-      saveUsers(users);
+      const classes = getClasses(); delete classes[code]; saveClasses(classes);
+      const users = getUsers(); users[teacher].classrooms = users[teacher].classrooms.filter(c => c !== code); saveUsers(users);
       renderTeacher(teacher);
     });
   }
 
-  // Render Student
   function renderStudent(code, student) {
     const classes = getClasses();
     const today = new Date().toISOString().split('T')[0];
@@ -193,15 +199,11 @@ function initApp() {
     }
     document.onkeydown = e => {
       if (studentDashboard.classList.contains('hidden')) return;
-      if (e.key === 'Backspace') {
-        e.preventDefault();
-        if (pos > 0) { pos--; const spans = document.querySelectorAll('.char'); spans[pos].classList.remove('correct', 'error'); mark(); updateAcc(); nextBtn.disabled = true; }
-        return;
-      }
+      if (e.key === 'Backspace') { e.preventDefault(); if (pos > 0) { pos--; const spans = document.querySelectorAll('.char'); spans[pos].classList.remove('correct', 'error'); mark(); updateAcc(); nextBtn.disabled = true; } return; }
       if (e.key.length !== 1 || pos >= drills[idx].length) { e.preventDefault(); return; }
       const spans = document.querySelectorAll('.char'); spans[pos].classList.remove('current');
       if (e.key === drills[idx][pos]) { spans[pos].classList.add('correct'); feedbackEl.textContent = ''; }
-      else { spans[pos].classList.add('error'); feedbackEl.textContent = `Expected "${drills[idx][pos]}", got "${e.key}"`; }
+      else { spans[pos].classList.add('error'); feedbackEl.textContent = `Expected "${drills[idx][pos]}" got "${e.key}"`; }
       pos++; mark(); updateAcc(); if (pos >= spans.length) nextBtn.disabled = false;
     };
     nextBtn.onclick = () => {
@@ -209,16 +211,13 @@ function initApp() {
       const corr = [...spans].filter(s => s.classList.contains('correct')).length;
       const err = [...spans].filter(s => s.classList.contains('error')).length;
       const acc = Math.max(0, Math.round((corr / spans.length) * 100));
-      const users = getUsers();
-      users[student].progress[today] = users[student].progress[today] || [];
-      users[student].progress[today].push({ drill: idx, correct: corr, errors: err, accuracy: acc });
-      saveUsers(users);
-      if (idx + 1 < drills.length) { idx++; load(); } else { promptEl.textContent = 'Done for today!'; nextBtn.style.display = 'none'; }
+      const users = getUsers(); users[student].progress[today] = users[student].progress[today] || [];
+      users[student].progress[today].push({ drill: idx, correct: corr, errors: err, accuracy: acc }); saveUsers(users);
+      if (idx + 1 < drills.length) { idx++; load(); } else { promptEl.textContent = 'Done!'; nextBtn.style.display = 'none'; }
     };
     load();
   }
 
-  // Admin
   function enterAdmin() {
     loginScreen.classList.add('hidden');
     const adminDiv = document.createElement('div'); adminDiv.id = 'admin-dashboard'; adminDiv.style.padding = '1em';
@@ -229,14 +228,25 @@ function initApp() {
   function renderAdmin() {
     const adminDiv = document.getElementById('admin-dashboard');
     const users = getUsers(), classes = getClasses();
-    adminDiv.innerHTML = `<h2>Admin Panel</h2><table border="1" style="width:100%"><thead><tr><th>User</th><th>Role</th><th>Info</th><th>Action</th></tr></thead><tbody id="admin-body"></tbody></table>`;
+    adminDiv.innerHTML = `
+      <h2>Admin Panel</h2>
+      <table border="1" style="width:100%">
+        <thead><tr><th>User</th><th>Role</th><th>Info</th><th>Action</th></tr></thead>
+        <tbody id="admin-body"></tbody>
+      </table>
+    `;
     const tbody = document.getElementById('admin-body');
     Object.entries(users).forEach(([u, data]) => {
       let info = '';
       if (data.role === 'teacher') info = (data.classrooms || []).join(', ') || 'No classes';
       else if (data.role === 'student') info = data.classroomCode || 'Unassigned';
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${u}</td><td>${data.role}</td><td>${info}</td><td><button data-user="${u}" class="del-user">Delete</button></td>`;
+      tr.innerHTML = `
+        <td>${u}</td>
+        <td>${data.role}</td>
+        <td>${info}</td>
+        <td><button data-user="${u}" class="del-user">Delete</button></td>
+      `;
       tbody.appendChild(tr);
     });
     document.querySelectorAll('.del-user').forEach(btn => btn.onclick = () => {

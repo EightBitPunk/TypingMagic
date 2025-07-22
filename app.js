@@ -1,14 +1,14 @@
-// Version 0.1.8
+// Version 0.1.9
 
 window.addEventListener("DOMContentLoaded", () => {
-  console.log("🔥 app.js v0.1.8 loaded");
+  console.log("🔥 app.js v0.1.9 loaded");
   showVersion();
   initApp();
 });
 
 function showVersion() {
   const badge = document.createElement("div");
-  badge.textContent = "version 0.1.8";
+  badge.textContent = "version 0.1.9";
   Object.assign(badge.style, { position: "fixed", bottom: "5px", right: "10px", fontSize: "0.8em", color: "gray", pointerEvents: "none" });
   document.body.appendChild(badge);
 }
@@ -25,12 +25,9 @@ function initApp() {
   const loginBtn = document.getElementById("login-btn");
   let toggleBtn = document.getElementById("toggle-mode-btn");
   if (!toggleBtn) { toggleBtn = document.createElement("button"); toggleBtn.id = "toggle-mode-btn"; loginScreen.appendChild(toggleBtn); }
-  const userIn = document.getElementById("username");
-  const passIn = document.getElementById("password");
-  const roleSel = document.getElementById("role");
-  const msg = document.getElementById("login-message");
-  const codeIn = document.getElementById("classroom-code");
-  const studentCodeWrap = document.getElementById("student-classroom-code");
+  const userIn = document.getElementById("username"), passIn = document.getElementById("password");
+  const roleSel = document.getElementById("role"), msg = document.getElementById("login-message");
+  const codeIn = document.getElementById("classroom-code"), studentCodeWrap = document.getElementById("student-classroom-code");
 
   const teacherDashboard = document.getElementById("teacher-dashboard");
   const classroomSetup = document.getElementById("classroom-setup");
@@ -43,8 +40,7 @@ function initApp() {
 
   const studentDashboard = document.getElementById("student-dashboard");
   const studentNameEl = document.getElementById("student-name");
-  const promptEl = document.getElementById("prompt");
-  const feedbackEl = document.getElementById("feedback");
+  const promptEl = document.getElementById("prompt"), feedbackEl = document.getElementById("feedback");
   const nextBtn = document.getElementById("next-btn");
 
   let isSignUp = false;
@@ -54,8 +50,7 @@ function initApp() {
     studentCodeWrap.classList.toggle("hidden", !(isSignUp && roleSel.value === "student"));
   }
   toggleBtn.onclick = () => { isSignUp = !isSignUp; updateMode(); };
-  roleSel.onchange = updateMode;
-  updateMode();
+  roleSel.onchange = updateMode; updateMode();
 
   const getUsers = () => JSON.parse(localStorage.getItem("users") || "{}");
   const saveUsers = u => localStorage.setItem("users", JSON.stringify(u));
@@ -71,10 +66,7 @@ function initApp() {
     if (isSignUp) {
       if (users[name]) { msg.textContent = 'User exists.'; return; }
       users[name] = { password: pw, role, progress: {}, classrooms: role==='teacher'?[]:undefined, classroomCode: role==='student'?clsCode:undefined };
-      if (role==='student'){
-        const classes = getClasses(); if(!classes[clsCode]){ msg.textContent = 'Invalid code.'; delete users[name]; return; }
-        classes[clsCode].students.push(name); saveClasses(classes);
-      }
+      if (role==='student') { const classes = getClasses(); classes[clsCode].students.push(name); saveClasses(classes); }
       saveUsers(users); enterDashboard(name, role); return;
     }
     if (users[name] && users[name].password === pw && users[name].role === role) enterDashboard(name, role);
@@ -93,52 +85,43 @@ function initApp() {
   }
 
   createClassBtn.onclick = () => {
-    const cname = newClassIn.value.trim(); if(!cname) return;
+    const cname = newClassIn.value.trim(); if(!cname)return;
     const code = 'C'+Math.floor(100000+Math.random()*900000);
-    const classes = getClasses();
-    classes[code] = { name: cname, teacher: teacherNameEl.textContent, students: [], drills: defaultDrills.slice(), customDrills: {} };
+    const classes = getClasses(); classes[code]={ name:cname, teacher:teacherNameEl.textContent, students:[], drills:defaultDrills.slice(), customDrills:{} };
     saveClasses(classes);
     const users = getUsers(); users[teacherNameEl.textContent].classrooms.push(code); saveUsers(users);
-    codeDisplay.textContent = `New Code: ${code}`; renderTeacher(teacherNameEl.textContent);
+    codeDisplay.textContent=`New Code: ${code}`; renderTeacher(teacherNameEl.textContent);
   };
 
   function renderTeacher(teacher) {
-    const users = getUsers(), classes = getClasses();
-    let html = '';
+    const users = getUsers(), classes = getClasses(); let html='';
     (users[teacher].classrooms||[]).forEach(code=>{
-      const cls = classes[code]; if(!cls) return;
+      const cls=classes[code]; if(!cls)return;
       html+=`<h3>${cls.name} (Code:${code}) <button data-edit='${code}'>Edit Drills</button> <span class='del' data-code='${code}' style='color:red;cursor:pointer;'>🗑️</span></h3>`;
-      html+="<table><tr><th>Student</th><th>Date</th><th>#Drills</th><th>Acc</th><th>Err</th></tr>";
+      html+=`<table><tr><th>Student</th><th>Date</th><th>#Drills</th><th>Acc</th><th>Err</th></tr>`;
       cls.students.forEach(s=>{
         const prog=users[s].progress||{};
         Object.entries(prog).forEach(([d,arr])=>{
-          const total=arr.length;
-          const avg=Math.round(arr.reduce((a,x)=>a+x.accuracy,0)/total);
-          const err=arr.reduce((a,x)=>a+x.errors,0);
+          const total=arr.length, avg=Math.round(arr.reduce((a,x)=>a+x.accuracy,0)/total), err=arr.reduce((a,x)=>a+x.errors,0);
           html+=`<tr><td>${s}</td><td>${d}</td><td>${total}</td><td>${avg}%</td><td>${err}</td></tr>`;
         });
-      });
-      html+="</table>";
-    });
-    studentProgressTable.innerHTML=html;
+      }); html+='</table>';
+    }); studentProgressTable.innerHTML=html;
 
-    // Edit logic
-    document.querySelectorAll("[data-edit]").forEach(btn=>btn.onclick=()=>{
+    document.querySelectorAll('[data-edit]').forEach(btn=>btn.onclick=()=>{
       const code=btn.dataset.edit;
+      const date=prompt('Enter date (YYYY-MM-DD):',new Date().toISOString().split('T')[0]); if(!date) return;
       const cls=getClasses()[code];
-      const date=prompt('Date (YYYY-MM-DD):',new Date().toISOString().split('T')[0]); if(!date)return;
       const existing=(cls.customDrills||{})[date]||cls.drills;
-      const input=prompt(`Drills for ${date} (| separated):`,existing.join('|')); if(input===null) return;
-      const lines=input.split('|').map(l=>l.trim()).filter(Boolean);
-      const applyAll=confirm('Apply to all?');
+      const val=prompt(`Drills for ${date} (use | to separate):`,existing.join('|`)); if(val===null) return;
+      const lines=val.split('|').map(l=>l.trim()).filter(Boolean);
+      const applyAll=confirm('Apply to all your classes?');
       const classesLocal=getClasses();
-      if(applyAll){ users[teacher].classrooms.forEach(cid=>{ classesLocal[cid].customDrills=classesLocal[cid].customDrills||{}; classesLocal[cid].customDrills[date]=lines; }); }
+      if(applyAll) users[teacher].classrooms.forEach(cid=>{ classesLocal[cid].customDrills=classesLocal[cid].customDrills||{}; classesLocal[cid].customDrills[date]=lines; });
       else { classesLocal[code].customDrills=classesLocal[code].customDrills||{}; classesLocal[code].customDrills[date]=lines; }
-      saveClasses(classesLocal);
-      renderTeacher(teacher);
+      saveClasses(classesLocal); renderTeacher(teacher);
     });
 
-    // Delete
     document.querySelectorAll('.del').forEach(btn=>btn.onclick=()=>{
       const code=btn.dataset.code; if(!confirm('Delete class?'))return;
       const classesLocal=getClasses(); delete classesLocal[code]; saveClasses(classesLocal);
@@ -151,13 +134,12 @@ function initApp() {
     const classes=getClasses(); const today=new Date().toISOString().split('T')[0];
     const drills=(classes[code]?.customDrills?.[today])||classes[code]?.drills||defaultDrills;
     let idx=0,pos=0;
-    let accEl=document.getElementById('accuracy-display');
-    if(!accEl){ accEl=document.createElement('div');accEl.id='accuracy-display';accEl.style.margin='0.5em 0';studentDashboard.querySelector('#feedback').after(accEl);}    
+    let accEl=document.getElementById('accuracy-display'); if(!accEl){accEl=document.createElement('div');accEl.id='accuracy-display';accEl.style.margin='0.5em 0';studentDashboard.querySelector('#feedback').after(accEl);}    
     function updateAcc(){ const spans=document.querySelectorAll('.char'); const errors=[...spans].filter(s=>s.classList.contains('error')).length; const total=spans.length; accEl.textContent=`Accuracy: ${Math.max(0,Math.round((total-errors)/total*100))}%`; }
-    function load(){ promptEl.innerHTML=''; drills[idx].split('').forEach(ch=>{ const s=document.createElement('span');s.className='char';s.textContent=ch;promptEl.appendChild(s); }); pos=0; mark(); feedbackEl.textContent=''; nextBtn.disabled=true; accEl.textContent='Accuracy: 100%'; }
+    function load(){ promptEl.innerHTML=''; drills[idx].split('').forEach(ch=>{const span=document.createElement('span');span.className='char';span.textContent=ch;promptEl.appendChild(span);});pos=0;mark();feedbackEl.textContent=''; nextBtn.disabled=true; accEl.textContent='Accuracy: 100%'; }
     function mark(){ document.querySelectorAll('.char').forEach(c=>c.classList.remove('current')); document.querySelectorAll('.char')[pos]?.classList.add('current'); }
-    document.onkeydown=e=>{ if(studentDashboard.classList.contains('hidden'))return; if(e.key==='Backspace'){ e.preventDefault(); if(pos>0){ pos--; const spans=document.querySelectorAll('.char'); spans[pos].classList.remove('correct','error'); mark(); updateAcc(); nextBtn.disabled=true; } return; } if(e.key.length!==1||pos>=drills[idx].length){ e.preventDefault(); return; } const spans=document.querySelectorAll('.char'); spans[pos].classList.remove('current'); if(e.key===drills[idx][pos]){ spans[pos].classList.add('correct'); feedbackEl.textContent=''; } else { spans[pos].classList.add('error'); feedbackEl.textContent=`Expected "${drills[idx][pos]}" got "${e.key}"`; } pos++; mark(); updateAcc(); if(pos>=spans.length) nextBtn.disabled=false; };
-    nextBtn.onclick=()=>{ const spans=document.querySelectorAll('.char'); const corr=[...spans].filter(s=>s.classList.contains('correct')).length; const err=[...spans].filter(s=>s.classList.contains('error')).length; const acc=Math.max(0,Math.round((corr/spans.length)*100)); const users=getUsers(); users[student].progress[today]=users[student].progress[today]||[]; users[student].progress[today].push({drill:idx,correct:corr,errors:err,accuracy:acc}); saveUsers(users); if(idx+1<drills.length){ idx++; load(); } else { promptEl.textContent='Done!'; nextBtn.style.display='none'; } };
+    document.onkeydown=e=>{ if(studentDashboard.classList.contains('hidden'))return; if(e.key==='Backspace'){e.preventDefault();if(pos>0){pos--;const spans=document.querySelectorAll('.char');spans[pos].classList.remove('correct','error');mark();updateAcc();nextBtn.disabled=true;}return;}if(e.key.length!==1||pos>=drills[idx].length){e.preventDefault();return;}const spans=document.querySelectorAll('.char');spans[pos].classList.remove('current');if(e.key===drills[idx][pos]){spans[pos].classList.add('correct');feedbackEl.textContent='';}else{spans[pos].classList.add('error');feedbackEl.textContent=`Expected "${drills[idx][pos]}" got "${e.key}"`; }pos++;mark();updateAcc();if(pos>=spans.length)nextBtn.disabled=false;};
+    nextBtn.onclick=()=>{const spans=document.querySelectorAll('.char');const corr=[...spans].filter(s=>s.classList.contains('correct')).length;const err=[...spans].filter(s=>s.classList.contains('error')).length;const acc=Math.max(0,Math.round((corr/spans.length)*100));const users=getUsers();users[student].progress[today]=users[student].progress[today]||[];users[student].progress[today].push({drill:idx,correct:corr,errors:err,accuracy:acc});saveUsers(users);if(idx+1<drills.length){idx++;load();}else{promptEl.textContent='Done!';nextBtn.style.display='none';}};
     load();
   }
 

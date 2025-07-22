@@ -1,14 +1,14 @@
-// Version 0.1.4
+// Version 0.1.5
 
 window.addEventListener("DOMContentLoaded", () => {
-  console.log("🔥 app.js v0.1.4 loaded");
+  console.log("🔥 app.js v0.1.5 loaded");
   showVersion();
   initApp();
 });
 
 function showVersion() {
   const badge = document.createElement("div");
-  badge.textContent = "version 0.1.4";
+  badge.textContent = "version 0.1.5";
   Object.assign(badge.style, { position: "fixed", bottom: "5px", right: "10px", fontSize: "0.8em", color: "gray", pointerEvents: "none" });
   document.body.appendChild(badge);
 }
@@ -19,14 +19,12 @@ function initApp() {
     "Typing practice improves both speed and accuracy.",
     "Accuracy over speed."
   ];
-  
+
   // DOM refs
   const loginScreen = document.getElementById("login-screen");
   const loginBtn = document.getElementById("login-btn");
   let toggleBtn = document.getElementById("toggle-mode-btn");
-  if (!toggleBtn) {
-    toggleBtn = document.createElement("button"); toggleBtn.id = "toggle-mode-btn"; loginScreen.appendChild(toggleBtn);
-  }
+  if (!toggleBtn) { toggleBtn = document.createElement("button"); toggleBtn.id = "toggle-mode-btn"; loginScreen.appendChild(toggleBtn); }
   const userIn = document.getElementById("username");
   const passIn = document.getElementById("password");
   const roleSel = document.getElementById("role");
@@ -124,11 +122,14 @@ function initApp() {
   };
 
   function renderTeacher(teacher) {
-    const classes = getClasses(), users = getUsers();
+    const users = getUsers();
+    const classes = getClasses();
     let html = '';
     (users[teacher].classrooms || []).forEach(code => {
       const cls = classes[code]; if (!cls) return;
-      html += `<h3>${cls.name} (Code: ${code}) <button data-edit="${code}">Edit Drills</button> <span class='del' data-code='${code}' style='color:red;cursor:pointer;'>🗑️</span></h3>`;
+      html += `<h3>${cls.name} (Code: ${code}) ` +
+              `<button data-edit="${code}">Edit Drills</button> ` +
+              `<span class='del' data-code='${code}' style='color:red;cursor:pointer;'>🗑️</span></h3>`;
       html += `<table><tr><th>Student</th><th>Date</th><th>Avg Acc</th><th>Errors</th></tr>`;
       cls.students.forEach(s => {
         const prog = users[s].progress || {};
@@ -141,33 +142,43 @@ function initApp() {
       html += `</table>`;
     });
     studentProgressTable.innerHTML = html;
-    // Edit drill listeners
-    document.querySelectorAll('[data-edit]').forEach(btn => btn.onclick = () => {
-      const code = btn.dataset.edit;
-      const date = prompt('Enter date to customize drills (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
-      if (!date) return;
-      const existing = classes[code].customDrills[date] || classes[code].drills;
-      const input = prompt(`Customize drills for ${date}. Separate lines with |`, existing.join('|'));
-      if (!input) return;
-      const newDrills = input.split('|');
-      const applyAll = confirm('Apply to ALL your classes for that date?');
-      if (applyAll) {
-        users[teacher].classrooms.forEach(cid => {
-          classes[cid].customDrills[date] = newDrills;
-        });
-      } else {
-        classes[code].customDrills[date] = newDrills;
-      }
-      saveClasses(classes);
-      renderTeacher(teacher);
+
+    // Edit Drills
+    document.querySelectorAll('[data-edit]').forEach(btn => {
+      btn.onclick = () => {
+        const code = btn.dataset.edit;
+        const date = prompt('Enter date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
+        if (!date) return;
+        const classesLocal = getClasses();
+        classesLocal[code].customDrills = classesLocal[code].customDrills || {};
+        const existing = classesLocal[code].customDrills[date] || classesLocal[code].drills;
+        const input = prompt(`Customize drills for ${date}. Separate with |`, existing.join('|'));
+        if (!input) return;
+        const newDrills = input.split('|');
+        const applyAll = confirm('Apply to ALL your classes for that date?');
+        if (applyAll) {
+          users[teacher].classrooms.forEach(cid => {
+            classesLocal[cid].customDrills = classesLocal[cid].customDrills || {};
+            classesLocal[cid].customDrills[date] = newDrills;
+          });
+        } else {
+          classesLocal[code].customDrills[date] = newDrills;
+        }
+        saveClasses(classesLocal);
+        renderTeacher(teacher);
+      };
     });
-    // Delete buttons
-    document.querySelectorAll('.del').forEach(btn => btn.onclick = () => {
-      const code = btn.dataset.code;
-      if (!confirm('Delete class?')) return;
-      const classes = getClasses(); delete classes[code]; saveClasses(classes);
-      const users = getUsers(); users[teacher].classrooms = users[teacher].classrooms.filter(c => c !== code); saveUsers(users);
-      renderTeacher(teacher);
+
+    // Delete class
+    document.querySelectorAll('.del').forEach(btn => {
+      btn.onclick = () => {
+        const code = btn.dataset.code;
+        if (!confirm('Delete class?')) return;
+        const classesLocal = getClasses(); delete classesLocal[code]; saveClasses(classesLocal);
+        users[teacher].classrooms = users[teacher].classrooms.filter(c => c !== code);
+        saveUsers(users);
+        renderTeacher(teacher);
+      };
     });
   }
 

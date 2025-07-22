@@ -1,162 +1,181 @@
-// Version
-const VERSION = "0.0.2";
+// Version 0.0.3
 
-// Drill bank by date
+// Drill data per day
 const dailyDrills = {
   "2025-07-22": [
-    "Always type like someone is watching.",
-    "Speed is nothing without accuracy.",
-    "Fingers on the home row keys."
+    "The fox sprinted quickly through the forest.",
+    "Typing every day improves muscle memory.",
+    "Accuracy is better than speed when learning."
   ],
   "2025-07-23": [
-    "Practice makes perfect.",
-    "Use proper posture while typing.",
-    "Avoid looking at the keyboard."
+    "Coding is a valuable skill in modern times.",
+    "Errors help you learn and improve faster.",
+    "Consistent practice leads to steady progress."
   ],
   "2025-07-24": [
-    "Each key has its home.",
-    "Focus on rhythm and flow.",
-    "Rest your wrists between sessions."
+    "Never give up when a bug gets in your way.",
+    "Review and revise: the coder’s best tools.",
+    "Testing your code ensures quality results."
   ],
   "2025-07-25": [
-    "Typing drills improve consistency.",
-    "Check for typos before submitting.",
-    "Accuracy comes before speed."
+    "A great teacher inspires and challenges students.",
+    "Lessons are best retained when practiced often.",
+    "Learning to type well builds lifelong skills."
   ]
 };
 
-// DOM Elements (Add version text)
-const versionText = document.createElement("div");
-versionText.style.position = "fixed";
-versionText.style.bottom = "4px";
-versionText.style.right = "10px";
-versionText.style.fontSize = "0.8em";
-versionText.style.color = "#888";
-versionText.textContent = `version ${VERSION}`;
-document.body.appendChild(versionText);
+// DOM Content Loaded
+window.addEventListener("DOMContentLoaded", () => {
+  console.log("🔥 app.js loaded! DOMContentLoaded? ", document.readyState);
 
-// UI setup
-updateModeUI();
-updateTeacherDashboard(); // Ensure this runs on load
+  const versionEl = document.createElement("div");
+  versionEl.textContent = "version 0.0.3";
+  versionEl.style.position = "fixed";
+  versionEl.style.bottom = "5px";
+  versionEl.style.right = "10px";
+  versionEl.style.fontSize = "0.8em";
+  versionEl.style.color = "gray";
+  document.body.appendChild(versionEl);
 
-// Attach createClassroomBtn again in case code was cut
-createClassroomBtn.addEventListener("click", () => {
-  const classroomName = newClassroomNameInput.value.trim();
-  if (!classroomName) return;
-
-  const code = generateClassroomCode();
-  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
-  classrooms[code] = {
-    name: classroomName,
-    teacher: teacherNameEl.textContent,
-    students: [],
-    customDrills: {} // new per-date drills
-  };
-  localStorage.setItem("classrooms", JSON.stringify(classrooms));
-
-  const users = JSON.parse(localStorage.getItem("users") || "{}");
-  if (!users[teacherNameEl.textContent].classrooms) {
-    users[teacherNameEl.textContent].classrooms = [];
-  }
-  users[teacherNameEl.textContent].classrooms.push(code);
-  localStorage.setItem("users", JSON.stringify(users));
-
-  updateTeacherDashboard();
+  // Reinitialize all buttons and logic
+  initApp();
 });
 
-// Delete class (icon click)
-function deleteClassroom(code) {
-  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
-  delete classrooms[code];
-  localStorage.setItem("classrooms", JSON.stringify(classrooms));
+function initApp() {
+  const loginScreen = document.getElementById("login-screen");
+  const loginBtn = document.getElementById("login-btn");
+  const toggleModeBtn = document.getElementById("toggle-mode-btn") || document.createElement("button");
+  toggleModeBtn.id = "toggle-mode-btn";
+  toggleModeBtn.textContent = "Go to Sign Up";
+  if (!toggleModeBtn.parentElement) loginScreen.appendChild(toggleModeBtn);
 
-  const users = JSON.parse(localStorage.getItem("users") || "{}");
-  const teacher = teacherNameEl.textContent;
-  const user = users[teacher];
-  if (user.classrooms) {
-    user.classrooms = user.classrooms.filter(c => c !== code);
-    localStorage.setItem("users", JSON.stringify(users));
+  const usernameInput = document.getElementById("username");
+  const passwordInput = document.getElementById("password");
+  const roleSelect = document.getElementById("role");
+  const loginMessage = document.getElementById("login-message");
+  const classroomCodeInput = document.getElementById("classroom-code");
+  const studentClassroomCode = document.getElementById("student-classroom-code");
+
+  const teacherDashboard = document.getElementById("teacher-dashboard");
+  const studentDashboard = document.getElementById("student-dashboard");
+  const teacherNameEl = document.getElementById("teacher-name");
+  const studentNameEl = document.getElementById("student-name");
+
+  let isSignUp = false;
+
+  function updateModeUI() {
+    loginBtn.textContent = isSignUp ? "Sign Up" : "Log In";
+    toggleModeBtn.textContent = isSignUp ? "Go to Log In" : "Go to Sign Up";
+    const showClassroomCode = isSignUp && roleSelect.value === "student";
+    studentClassroomCode.classList.toggle("hidden", !showClassroomCode);
   }
 
-  updateTeacherDashboard();
-}
-
-// Extend teacher dashboard rendering
-function updateTeacherDashboard() {
-  const users = JSON.parse(localStorage.getItem("users") || "{}");
-  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
-  const teacher = teacherNameEl.textContent;
-  const teacherUser = users[teacher];
-  const codes = teacherUser.classrooms || [];
-
-  let html = "";
-  codes.forEach(code => {
-    const classroom = classrooms[code];
-    if (!classroom) return;
-
-    html += `<h3>${classroom.name} (Code: ${code}) <span style='cursor:pointer;color:red;' onclick='deleteClassroom("${code}")'>&#128465;</span></h3>`;
-    html += `<button onclick='editDrills("${code}")'>Edit Drills</button>`;
-    html += "<table><tr><th>Student</th><th>Date</th><th>Drills</th><th>Accuracy</th><th>Errors</th></tr>";
-    classroom.students.forEach(studentName => {
-      const student = users[studentName];
-      if (!student || !student.progress) return;
-      Object.entries(student.progress).forEach(([date, drills]) => {
-        const totalDrills = drills.length;
-        const avgAccuracy = Math.round(drills.reduce((sum, d) => sum + d.accuracy, 0) / totalDrills);
-        const totalErrors = drills.reduce((sum, d) => sum + d.errors, 0);
-        html += `<tr><td>${studentName}</td><td>${date}</td><td>${totalDrills}</td><td>${avgAccuracy}%</td><td>${totalErrors}</td></tr>`;
-      });
-    });
-    html += "</table>";
+  toggleModeBtn.addEventListener("click", () => {
+    isSignUp = !isSignUp;
+    updateModeUI();
   });
 
-  studentProgressTable.innerHTML = html;
-}
+  roleSelect.addEventListener("change", updateModeUI);
+  updateModeUI();
 
-// Drill Editor (simple prompt-based for now)
-function editDrills(code) {
-  const date = prompt("Enter date to customize drills (YYYY-MM-DD):", currentDate);
-  if (!date) return;
+  loginBtn.addEventListener("click", () => {
+    const name = usernameInput.value.trim();
+    const password = passwordInput.value;
+    const role = roleSelect.value;
+    const classroomCode = classroomCodeInput.value.trim();
 
-  let newDrills = [];
-  for (let i = 0; i < 3; i++) {
-    const line = prompt(`Enter line ${i + 1}:`);
-    if (!line) return;
-    newDrills.push(line);
-  }
+    if (!name || !password || (isSignUp && role === "student" && !classroomCode)) {
+      loginMessage.textContent = "Please fill in all required fields.";
+      return;
+    }
 
-  const applyAll = confirm("Apply to ALL your classes for that day?");
-  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
-  const users = JSON.parse(localStorage.getItem("users") || "{}");
-  const teacher = teacherNameEl.textContent;
-  const user = users[teacher];
+    const users = JSON.parse(localStorage.getItem("users") || "{}");
 
-  if (applyAll) {
-    (user.classrooms || []).forEach(cid => {
-      if (classrooms[cid]) {
-        if (!classrooms[cid].customDrills) classrooms[cid].customDrills = {};
-        classrooms[cid].customDrills[date] = newDrills;
+    if (isSignUp) {
+      if (users[name]) {
+        loginMessage.textContent = "User already exists.";
+        return;
       }
+      if (role === "student") {
+        const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
+        if (!classrooms[classroomCode]) {
+          loginMessage.textContent = "Invalid classroom code.";
+          return;
+        }
+        classrooms[classroomCode].students.push(name);
+        localStorage.setItem("classrooms", JSON.stringify(classrooms));
+      }
+      users[name] = { password, role, classroomCode, progress: {} };
+      localStorage.setItem("users", JSON.stringify(users));
+      proceedToDashboard(name, role);
+    } else {
+      if (users[name] && users[name].password === password && users[name].role === role) {
+        proceedToDashboard(name, role);
+      } else {
+        loginMessage.textContent = "Incorrect credentials.";
+      }
+    }
+  });
+
+  function proceedToDashboard(name, role) {
+    loginScreen.classList.add("hidden");
+    const users = JSON.parse(localStorage.getItem("users") || "{}");
+    const currentUser = users[name];
+
+    if (role === "teacher") {
+      teacherNameEl.textContent = name;
+      teacherDashboard.classList.remove("hidden");
+      updateTeacherDashboard(name);
+    } else {
+      studentNameEl.textContent = name;
+      studentDashboard.classList.remove("hidden");
+      // Load student drill UI based on today’s date
+    }
+  }
+
+  function updateTeacherDashboard(teacherName) {
+    const users = JSON.parse(localStorage.getItem("users") || "{}");
+    const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
+    const teacherUser = users[teacherName];
+    const codes = teacherUser.classrooms || [];
+
+    let html = "";
+    codes.forEach(code => {
+      const classroom = classrooms[code];
+      if (!classroom) return;
+      html += `<h3>${classroom.name} (Code: ${code}) <span style="color:red; cursor:pointer;" data-code="${code}" class="delete-class">🗑️</span></h3>`;
+      html += "<table><tr><th>Student</th><th>Date</th><th>Drills</th><th>Accuracy</th><th>Errors</th></tr>";
+      classroom.students.forEach(studentName => {
+        const student = users[studentName];
+        if (!student || !student.progress) return;
+        Object.entries(student.progress).forEach(([date, drills]) => {
+          const totalDrills = drills.length;
+          const avgAccuracy = Math.round(drills.reduce((sum, d) => sum + d.accuracy, 0) / totalDrills);
+          const totalErrors = drills.reduce((sum, d) => sum + d.errors, 0);
+          html += `<tr><td>${studentName}</td><td>${date}</td><td>${totalDrills}</td><td>${avgAccuracy}%</td><td>${totalErrors}</td></tr>`;
+        });
+      });
+      html += "</table>";
     });
-  } else {
-    if (!classrooms[code].customDrills) classrooms[code].customDrills = {};
-    classrooms[code].customDrills[date] = newDrills;
-  }
 
-  localStorage.setItem("classrooms", JSON.stringify(classrooms));
-  alert("Drills updated!");
-  updateTeacherDashboard();
-}
+    const tableContainer = document.getElementById("student-progress-table");
+    tableContainer.innerHTML = html;
 
-// Replace global drill loader to include custom drills
-function getTodaysDrills(classroomCode) {
-  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
-  if (
-    classrooms[classroomCode] &&
-    classrooms[classroomCode].customDrills &&
-    classrooms[classroomCode].customDrills[currentDate]
-  ) {
-    return classrooms[classroomCode].customDrills[currentDate];
+    document.querySelectorAll(".delete-class").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const code = btn.getAttribute("data-code");
+        if (confirm("Delete this class?")) {
+          const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
+          delete classrooms[code];
+          localStorage.setItem("classrooms", JSON.stringify(classrooms));
+
+          const users = JSON.parse(localStorage.getItem("users") || "{}");
+          users[teacherName].classrooms = users[teacherName].classrooms.filter(c => c !== code);
+          localStorage.setItem("users", JSON.stringify(users));
+
+          updateTeacherDashboard(teacherName);
+        }
+      });
+    });
   }
-  return dailyDrills[currentDate] || ["Default drill if no match."];
 }

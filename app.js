@@ -1,78 +1,101 @@
-// Version 0.0.2
+// Version
+const VERSION = "0.0.2";
 
-// Drill templates by date
-const drillSets = {
-  "default": [
-    "The quick brown fox jumps over the lazy dog.",
-    "Typing practice improves both speed and accuracy.",
-    "Case matters: Capital Letters are important!"
-  ],
-  "2025-07-21": [
-    "Practice makes perfect with daily typing.",
-    "Don’t forget to stretch your fingers often.",
-    "Speed is great, but accuracy comes first."
-  ],
+// Drill bank by date
+const dailyDrills = {
   "2025-07-22": [
-    "Today’s drills are custom made for you!",
-    "Focus on each key and keep a good rhythm.",
-    "Mistakes are okay—just keep going."
+    "Always type like someone is watching.",
+    "Speed is nothing without accuracy.",
+    "Fingers on the home row keys."
   ],
   "2025-07-23": [
-    "Another day, another drill to conquer.",
-    "Try to beat your last typing score.",
-    "Practice builds skill and confidence."
+    "Practice makes perfect.",
+    "Use proper posture while typing.",
+    "Avoid looking at the keyboard."
+  ],
+  "2025-07-24": [
+    "Each key has its home.",
+    "Focus on rhythm and flow.",
+    "Rest your wrists between sessions."
+  ],
+  "2025-07-25": [
+    "Typing drills improve consistency.",
+    "Check for typos before submitting.",
+    "Accuracy comes before speed."
   ]
 };
 
-const customDrills = JSON.parse(localStorage.getItem("customDrills") || "{}");
+// DOM Elements (Add version text)
+const versionText = document.createElement("div");
+versionText.style.position = "fixed";
+versionText.style.bottom = "4px";
+versionText.style.right = "10px";
+versionText.style.fontSize = "0.8em";
+versionText.style.color = "#888";
+versionText.textContent = `version ${VERSION}`;
+document.body.appendChild(versionText);
 
-// DOM Elements
-const versionEl = document.createElement("div");
-versionEl.textContent = "version 0.0.2";
-versionEl.style.fontSize = "10px";
-versionEl.style.textAlign = "center";
-versionEl.style.marginTop = "20px";
-document.body.appendChild(versionEl);
+// UI setup
+updateModeUI();
+updateTeacherDashboard(); // Ensure this runs on load
 
-function getDrillsForTeacher(teacher, classroomCode) {
-  const date = new Date().toISOString().split("T")[0];
-  const teacherDrills = customDrills[teacher]?.[date]?.[classroomCode] ||
-                         customDrills[teacher]?.[date]?.["all"];
-  return teacherDrills || drillSets[date] || drillSets["default"];
+// Attach createClassroomBtn again in case code was cut
+createClassroomBtn.addEventListener("click", () => {
+  const classroomName = newClassroomNameInput.value.trim();
+  if (!classroomName) return;
+
+  const code = generateClassroomCode();
+  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
+  classrooms[code] = {
+    name: classroomName,
+    teacher: teacherNameEl.textContent,
+    students: [],
+    customDrills: {} // new per-date drills
+  };
+  localStorage.setItem("classrooms", JSON.stringify(classrooms));
+
+  const users = JSON.parse(localStorage.getItem("users") || "{}");
+  if (!users[teacherNameEl.textContent].classrooms) {
+    users[teacherNameEl.textContent].classrooms = [];
+  }
+  users[teacherNameEl.textContent].classrooms.push(code);
+  localStorage.setItem("users", JSON.stringify(users));
+
+  updateTeacherDashboard();
+});
+
+// Delete class (icon click)
+function deleteClassroom(code) {
+  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
+  delete classrooms[code];
+  localStorage.setItem("classrooms", JSON.stringify(classrooms));
+
+  const users = JSON.parse(localStorage.getItem("users") || "{}");
+  const teacher = teacherNameEl.textContent;
+  const user = users[teacher];
+  if (user.classrooms) {
+    user.classrooms = user.classrooms.filter(c => c !== code);
+    localStorage.setItem("users", JSON.stringify(users));
+  }
+
+  updateTeacherDashboard();
 }
 
-function loadDrill(index) {
-  const classroomCode = currentUser?.classroomCode;
-  const name = studentNameEl?.textContent || currentUser?.name;
-  const drills = getDrillsForTeacher(currentUser?.teacher || name, classroomCode);
-  current = index;
-  cursorPos = 0;
-  promptEl.innerHTML = "";
-  drills[current].split("").forEach(char => {
-    const span = document.createElement("span");
-    span.classList.add("char");
-    span.textContent = char;
-    promptEl.appendChild(span);
-  });
-  updateCurrentSpan();
-  feedbackEl.innerHTML = "";
-  nextBtn.disabled = true;
-  promptEl.focus();
-}
-
+// Extend teacher dashboard rendering
 function updateTeacherDashboard() {
   const users = JSON.parse(localStorage.getItem("users") || "{}");
   const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
   const teacher = teacherNameEl.textContent;
   const teacherUser = users[teacher];
   const codes = teacherUser.classrooms || [];
-  let html = "";
 
+  let html = "";
   codes.forEach(code => {
     const classroom = classrooms[code];
     if (!classroom) return;
-    html += `<h3>${classroom.name} (Code: ${code}) <span class='delete-class' data-code='${code}' style='color:red; cursor:pointer;'>🗑️</span></h3>`;
-    html += `<button onclick="editDrills('${code}')">Customize Drills</button>`;
+
+    html += `<h3>${classroom.name} (Code: ${code}) <span style='cursor:pointer;color:red;' onclick='deleteClassroom("${code}")'>&#128465;</span></h3>`;
+    html += `<button onclick='editDrills("${code}")'>Edit Drills</button>`;
     html += "<table><tr><th>Student</th><th>Date</th><th>Drills</th><th>Accuracy</th><th>Errors</th></tr>";
     classroom.students.forEach(studentName => {
       const student = users[studentName];
@@ -88,50 +111,52 @@ function updateTeacherDashboard() {
   });
 
   studentProgressTable.innerHTML = html;
-
-  document.querySelectorAll(".delete-class").forEach(el => {
-    el.addEventListener("click", () => {
-      const code = el.dataset.code;
-      deleteClassroom(code);
-    });
-  });
 }
 
-function deleteClassroom(code) {
+// Drill Editor (simple prompt-based for now)
+function editDrills(code) {
+  const date = prompt("Enter date to customize drills (YYYY-MM-DD):", currentDate);
+  if (!date) return;
+
+  let newDrills = [];
+  for (let i = 0; i < 3; i++) {
+    const line = prompt(`Enter line ${i + 1}:`);
+    if (!line) return;
+    newDrills.push(line);
+  }
+
+  const applyAll = confirm("Apply to ALL your classes for that day?");
   const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
   const users = JSON.parse(localStorage.getItem("users") || "{}");
-  delete classrooms[code];
   const teacher = teacherNameEl.textContent;
-  if (users[teacher]?.classrooms) {
-    users[teacher].classrooms = users[teacher].classrooms.filter(c => c !== code);
-  }
-  localStorage.setItem("classrooms", JSON.stringify(classrooms));
-  localStorage.setItem("users", JSON.stringify(users));
-  updateTeacherDashboard();
-}
+  const user = users[teacher];
 
-function editDrills(classroomCode) {
-  const date = new Date().toISOString().split("T")[0];
-  const teacher = teacherNameEl.textContent;
-  const current = getDrillsForTeacher(teacher, classroomCode);
-  const edited = prompt(`Edit drills for ${date} (${classroomCode}). Separate with |`, current.join("|") || "");
-  if (!edited) return;
-
-  if (!customDrills[teacher]) customDrills[teacher] = {};
-  if (!customDrills[teacher][date]) customDrills[teacher][date] = {};
-
-  const applyAll = confirm("Apply this custom lesson to ALL your classes today?");
   if (applyAll) {
-    customDrills[teacher][date]["all"] = edited.split("|");
+    (user.classrooms || []).forEach(cid => {
+      if (classrooms[cid]) {
+        if (!classrooms[cid].customDrills) classrooms[cid].customDrills = {};
+        classrooms[cid].customDrills[date] = newDrills;
+      }
+    });
   } else {
-    customDrills[teacher][date][classroomCode] = edited.split("|");
+    if (!classrooms[code].customDrills) classrooms[code].customDrills = {};
+    classrooms[code].customDrills[date] = newDrills;
   }
 
-  localStorage.setItem("customDrills", JSON.stringify(customDrills));
+  localStorage.setItem("classrooms", JSON.stringify(classrooms));
+  alert("Drills updated!");
   updateTeacherDashboard();
 }
 
-// Immediately show teacher dashboard on login
-if (teacherDashboard && !teacherDashboard.classList.contains("hidden")) {
-  updateTeacherDashboard();
+// Replace global drill loader to include custom drills
+function getTodaysDrills(classroomCode) {
+  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
+  if (
+    classrooms[classroomCode] &&
+    classrooms[classroomCode].customDrills &&
+    classrooms[classroomCode].customDrills[currentDate]
+  ) {
+    return classrooms[classroomCode].customDrills[currentDate];
+  }
+  return dailyDrills[currentDate] || ["Default drill if no match."];
 }

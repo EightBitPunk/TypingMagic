@@ -1,312 +1,137 @@
-// Debug
-console.log("🔥 app.js loaded! DOMContentLoaded? ", document.readyState);
+// Version 0.0.2
 
-const drills = [
-  "The quick brown fox jumps over the lazy dog.",
-  "Typing practice improves both speed and accuracy.",
-  "Case matters: Capital Letters are important!"
-];
+// Drill templates by date
+const drillSets = {
+  "default": [
+    "The quick brown fox jumps over the lazy dog.",
+    "Typing practice improves both speed and accuracy.",
+    "Case matters: Capital Letters are important!"
+  ],
+  "2025-07-21": [
+    "Practice makes perfect with daily typing.",
+    "Don’t forget to stretch your fingers often.",
+    "Speed is great, but accuracy comes first."
+  ],
+  "2025-07-22": [
+    "Today’s drills are custom made for you!",
+    "Focus on each key and keep a good rhythm.",
+    "Mistakes are okay—just keep going."
+  ],
+  "2025-07-23": [
+    "Another day, another drill to conquer.",
+    "Try to beat your last typing score.",
+    "Practice builds skill and confidence."
+  ]
+};
+
+const customDrills = JSON.parse(localStorage.getItem("customDrills") || "{}");
 
 // DOM Elements
-const loginScreen = document.getElementById("login-screen");
-const loginBtn = document.getElementById("login-btn");
-const toggleModeBtn = document.createElement("button");
-toggleModeBtn.id = "toggle-mode-btn";
-loginScreen.appendChild(toggleModeBtn);
+const versionEl = document.createElement("div");
+versionEl.textContent = "version 0.0.2";
+versionEl.style.fontSize = "10px";
+versionEl.style.textAlign = "center";
+versionEl.style.marginTop = "20px";
+document.body.appendChild(versionEl);
 
-const usernameInput = document.getElementById("username");
-const passwordInput = document.getElementById("password");
-const roleSelect = document.getElementById("role");
-const loginMessage = document.getElementById("login-message");
-const classroomCodeInput = document.getElementById("classroom-code");
-const studentClassroomCode = document.getElementById("student-classroom-code");
-
-const teacherDashboard = document.getElementById("teacher-dashboard");
-const studentDashboard = document.getElementById("student-dashboard");
-const teacherNameEl = document.getElementById("teacher-name");
-const studentNameEl = document.getElementById("student-name");
-
-const promptEl = document.getElementById("prompt");
-const feedbackEl = document.getElementById("feedback");
-const nextBtn = document.getElementById("next-btn");
-const studentStats = document.getElementById("student-stats");
-
-const classroomSetup = document.getElementById("classroom-setup");
-const createClassroomBtn = document.getElementById("create-classroom-btn");
-const newClassroomNameInput = document.getElementById("new-classroom-name");
-const classroomCodeDisplay = document.getElementById("classroom-code-display");
-const teacherClassroomView = document.getElementById("teacher-classroom-view");
-const studentProgressTable = document.getElementById("student-progress-table");
-
-let current = 0;
-let cursorPos = 0;
-let currentDate = new Date().toISOString().split("T")[0];
-let isSignUp = false;
-
-// Utils
-function generateClassroomCode() {
-  return "C" + Math.floor(100000 + Math.random() * 900000);
-}
-function getUsers() {
-  return JSON.parse(localStorage.getItem("users") || "{}");
-}
-function saveUsers(u) {
-  localStorage.setItem("users", JSON.stringify(u));
-}
-function getClasses() {
-  return JSON.parse(localStorage.getItem("classrooms") || "{}");
-}
-function saveClasses(c) {
-  localStorage.setItem("classrooms", JSON.stringify(c));
+function getDrillsForTeacher(teacher, classroomCode) {
+  const date = new Date().toISOString().split("T")[0];
+  const teacherDrills = customDrills[teacher]?.[date]?.[classroomCode] ||
+                         customDrills[teacher]?.[date]?.["all"];
+  return teacherDrills || drillSets[date] || drillSets["default"];
 }
 
-// Toggle Login/Sign Up
-function updateModeUI() {
-  loginBtn.textContent = isSignUp ? "Sign Up" : "Log In";
-  toggleModeBtn.textContent = isSignUp ? "Go to Log In" : "Go to Sign Up";
-  const showCode = isSignUp && roleSelect.value === "student";
-  studentClassroomCode.classList.toggle("hidden", !showCode);
-}
-roleSelect.addEventListener("change", updateModeUI);
-toggleModeBtn.addEventListener("click", () => {
-  isSignUp = !isSignUp;
-  updateModeUI();
-});
-updateModeUI();
-
-// Login or Sign-Up
-loginBtn.addEventListener("click", () => {
-  const name = usernameInput.value.trim();
-  const password = passwordInput.value;
-  const role = roleSelect.value;
-  const code = classroomCodeInput.value.trim();
-
-  if (!name || !password || (isSignUp && role === "student" && !code)) {
-    loginMessage.textContent = "Please fill in all required fields.";
-    return;
-  }
-
-  const users = getUsers();
-
-  if (isSignUp) {
-    if (users[name]) {
-      loginMessage.textContent = "User already exists.";
-      return;
-    }
-
-    users[name] = {
-      password,
-      role,
-      classroomCode: code,
-      progress: {},
-      ...(role === "teacher" ? { classrooms: [] } : {})
-    };
-
-    if (role === "student") {
-      const classes = getClasses();
-      if (!classes[code]) {
-        loginMessage.textContent = "Invalid classroom code.";
-        delete users[name];
-        return;
-      }
-      classes[code].students.push(name);
-      saveClasses(classes);
-    }
-
-    saveUsers(users);
-    proceedToDashboard(name, role);
-
-  } else {
-    if (users[name] && users[name].password === password && users[name].role === role) {
-      proceedToDashboard(name, role);
-    } else {
-      loginMessage.textContent = "Incorrect credentials.";
-    }
-  }
-});
-
-function proceedToDashboard(name, role) {
-  loginScreen.classList.add("hidden");
-  if (role === "teacher") {
-    teacherNameEl.textContent = name;
-    teacherDashboard.classList.remove("hidden");
-    updateTeacherDashboard();
-  } else {
-    studentNameEl.textContent = name;
-    studentDashboard.classList.remove("hidden");
-    loadDrill(0);
-  }
+function loadDrill(index) {
+  const classroomCode = currentUser?.classroomCode;
+  const name = studentNameEl?.textContent || currentUser?.name;
+  const drills = getDrillsForTeacher(currentUser?.teacher || name, classroomCode);
+  current = index;
+  cursorPos = 0;
+  promptEl.innerHTML = "";
+  drills[current].split("").forEach(char => {
+    const span = document.createElement("span");
+    span.classList.add("char");
+    span.textContent = char;
+    promptEl.appendChild(span);
+  });
+  updateCurrentSpan();
+  feedbackEl.innerHTML = "";
+  nextBtn.disabled = true;
+  promptEl.focus();
 }
 
-// TEACHER DASHBOARD
 function updateTeacherDashboard() {
-  const users = getUsers();
-  const classes = getClasses();
+  const users = JSON.parse(localStorage.getItem("users") || "{}");
+  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
   const teacher = teacherNameEl.textContent;
-  const codes = users[teacher].classrooms || [];
-
-  if (codes.length === 0) {
-    teacherClassroomView.classList.add("hidden");
-    classroomCodeDisplay.textContent = "";
-    return;
-  }
-
-  teacherClassroomView.classList.remove("hidden");
-
+  const teacherUser = users[teacher];
+  const codes = teacherUser.classrooms || [];
   let html = "";
-  codes.forEach(code => {
-    const room = classes[code];
-    if (!room) return;
-    html += `<h3>${room.name} (Code: ${code}) 
-      <span class="delete-class" data-code="${code}" title="Delete Class" style="cursor:pointer;color:red;margin-left:10px;">🗑️</span>
-    </h3>
-    <table>
-      <tr><th>Student</th><th>Date</th><th>Drills</th><th>Accuracy</th><th>Errors</th></tr>`;
 
-    room.students.forEach(s => {
-      const prog = users[s]?.progress;
-      if (!prog) return;
-      Object.entries(prog).forEach(([d, arr]) => {
-        const total = arr.length;
-        const avg = Math.round(arr.reduce((a, x) => a + x.accuracy, 0) / total);
-        const errs = arr.reduce((a, x) => a + x.errors, 0);
-        html += `<tr><td>${s}</td><td>${d}</td><td>${total}</td><td>${avg}%</td><td>${errs}</td></tr>`;
+  codes.forEach(code => {
+    const classroom = classrooms[code];
+    if (!classroom) return;
+    html += `<h3>${classroom.name} (Code: ${code}) <span class='delete-class' data-code='${code}' style='color:red; cursor:pointer;'>🗑️</span></h3>`;
+    html += `<button onclick="editDrills('${code}')">Customize Drills</button>`;
+    html += "<table><tr><th>Student</th><th>Date</th><th>Drills</th><th>Accuracy</th><th>Errors</th></tr>";
+    classroom.students.forEach(studentName => {
+      const student = users[studentName];
+      if (!student || !student.progress) return;
+      Object.entries(student.progress).forEach(([date, drills]) => {
+        const totalDrills = drills.length;
+        const avgAccuracy = Math.round(drills.reduce((sum, d) => sum + d.accuracy, 0) / totalDrills);
+        const totalErrors = drills.reduce((sum, d) => sum + d.errors, 0);
+        html += `<tr><td>${studentName}</td><td>${date}</td><td>${totalDrills}</td><td>${avgAccuracy}%</td><td>${totalErrors}</td></tr>`;
       });
     });
-
-    html += `</table>`;
+    html += "</table>";
   });
 
   studentProgressTable.innerHTML = html;
 
-  // Attach delete buttons
-  document.querySelectorAll(".delete-class").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const code = btn.dataset.code;
-      if (!confirm(`Delete class ${code}? This cannot be undone.`)) return;
+  document.querySelectorAll(".delete-class").forEach(el => {
+    el.addEventListener("click", () => {
+      const code = el.dataset.code;
       deleteClassroom(code);
     });
   });
 }
 
 function deleteClassroom(code) {
-  const users = getUsers();
-  const classes = getClasses();
+  const classrooms = JSON.parse(localStorage.getItem("classrooms") || "{}");
+  const users = JSON.parse(localStorage.getItem("users") || "{}");
+  delete classrooms[code];
   const teacher = teacherNameEl.textContent;
-
-  // Remove class
-  delete classes[code];
-
-  // Remove from teacher's list
-  users[teacher].classrooms = users[teacher].classrooms.filter(c => c !== code);
-
-  // Remove code from students
-  Object.values(users).forEach(user => {
-    if (user.classroomCode === code) user.classroomCode = "";
-  });
-
-  saveUsers(users);
-  saveClasses(classes);
+  if (users[teacher]?.classrooms) {
+    users[teacher].classrooms = users[teacher].classrooms.filter(c => c !== code);
+  }
+  localStorage.setItem("classrooms", JSON.stringify(classrooms));
+  localStorage.setItem("users", JSON.stringify(users));
   updateTeacherDashboard();
 }
 
-// Create new classroom
-createClassroomBtn.addEventListener("click", () => {
-  const cname = newClassroomNameInput.value.trim();
-  if (!cname) {
-    classroomCodeDisplay.textContent = "Enter a classroom name.";
-    return;
-  }
-  const code = generateClassroomCode();
-  const classes = getClasses();
-  classes[code] = {
-    name: cname,
-    teacher: teacherNameEl.textContent,
-    students: []
-  };
-  saveClasses(classes);
+function editDrills(classroomCode) {
+  const date = new Date().toISOString().split("T")[0];
+  const teacher = teacherNameEl.textContent;
+  const current = getDrillsForTeacher(teacher, classroomCode);
+  const edited = prompt(`Edit drills for ${date} (${classroomCode}). Separate with |`, current.join("|") || "");
+  if (!edited) return;
 
-  const users = getUsers();
-  users[teacherNameEl.textContent].classrooms.push(code);
-  saveUsers(users);
+  if (!customDrills[teacher]) customDrills[teacher] = {};
+  if (!customDrills[teacher][date]) customDrills[teacher][date] = {};
 
-  classroomCodeDisplay.textContent = `New Code: ${code}`;
-  updateTeacherDashboard();
-});
-
-// STUDENT DRILLS
-function updateCurrentSpan() {
-  const spans = promptEl.querySelectorAll("span.char");
-  spans.forEach(s => s.classList.remove("current"));
-  if (cursorPos < spans.length) spans[cursorPos].classList.add("current");
-}
-function loadDrill(idx) {
-  current = idx;
-  cursorPos = 0;
-  promptEl.innerHTML = "";
-  drills[current].split("").forEach(ch => {
-    const span = document.createElement("span");
-    span.className = "char";
-    span.textContent = ch;
-    promptEl.appendChild(span);
-  });
-  updateCurrentSpan();
-  feedbackEl.textContent = "";
-  nextBtn.disabled = true;
-  promptEl.focus();
-}
-document.addEventListener("keydown", e => {
-  if (studentDashboard.classList.contains("hidden")) return;
-  if (e.ctrlKey || e.altKey || e.metaKey) return;
-  const spans = promptEl.querySelectorAll("span.char");
-
-  if (e.key === "Backspace") {
-    e.preventDefault();
-    if (cursorPos > 0) {
-      cursorPos--;
-      spans[cursorPos].classList.remove("correct", "error");
-      updateCurrentSpan();
-      feedbackEl.textContent = "";
-      nextBtn.disabled = true;
-    }
-    return;
-  }
-  if (e.key.length !== 1 || cursorPos >= spans.length) {
-    e.preventDefault();
-    return;
-  }
-
-  const expected = drills[current][cursorPos];
-  spans[cursorPos].classList.remove("current");
-  if (e.key === expected) {
-    spans[cursorPos].classList.add("correct");
-    feedbackEl.textContent = "";
+  const applyAll = confirm("Apply this custom lesson to ALL your classes today?");
+  if (applyAll) {
+    customDrills[teacher][date]["all"] = edited.split("|");
   } else {
-    spans[cursorPos].classList.add("error");
-    feedbackEl.textContent = `Expected "${expected}", got "${e.key}"`;
+    customDrills[teacher][date][classroomCode] = edited.split("|");
   }
 
-  cursorPos++;
-  updateCurrentSpan();
-  nextBtn.disabled = (cursorPos < spans.length);
-});
-nextBtn.addEventListener("click", () => {
-  const spans = promptEl.querySelectorAll("span.char");
-  const correct = [...spans].filter(s => s.classList.contains("correct")).length;
-  const errors = [...spans].filter(s => s.classList.contains("error")).length;
-  const total = spans.length;
-  const acc = Math.round((correct / total) * 100);
+  localStorage.setItem("customDrills", JSON.stringify(customDrills));
+  updateTeacherDashboard();
+}
 
-  const users = getUsers();
-  const user = users[studentNameEl.textContent];
-  user.progress[currentDate] ||= [];
-  user.progress[currentDate].push({ drill: current, correct, errors, accuracy: acc });
-  saveUsers(users);
-
-  studentStats.textContent = `Drill ${current + 1} complete. Accuracy: ${acc}%. Errors: ${errors}`;
-  if (current + 1 < drills.length) loadDrill(current + 1);
-  else {
-    promptEl.textContent = "You've completed today's prompts!";
-    nextBtn.style.display = "none";
-  }
-});
+// Immediately show teacher dashboard on login
+if (teacherDashboard && !teacherDashboard.classList.contains("hidden")) {
+  updateTeacherDashboard();
+}

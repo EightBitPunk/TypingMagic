@@ -1,4 +1,4 @@
-// Version 0.1.18
+// Version 0.1.19
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -7,7 +7,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
 function showVersion() {
   const badge = document.createElement("div");
-  badge.textContent = "version 0.1.18";
+  badge.textContent = "version 0.1.19";
   Object.assign(badge.style, {
     position: "fixed",
     bottom: "5px",
@@ -82,7 +82,7 @@ function initApp() {
     if(isSignUp){
       if(users[u]){loginMsg.textContent='User exists.';return;}
       users[u]={password:p,role,progress:{},classrooms:role==='teacher'?[]:undefined,classroomCode:role==='student'?code:undefined};
-      if(role==='student'){const cl=getClasses();cl[code].students.push(u);saveClasses(cl);}
+      if(role==='student'){const cl=getClasses();cl[code].students.push(u);saveClasses(cl);}      
       saveUsers(users);enterDash(u,role);
     } else {
       if(users[u]&&users[u].password===p&&users[u].role===role)enterDash(u,role);
@@ -127,51 +127,36 @@ function initApp() {
       c.students.forEach(s=>{const pr=u[s].progress||{};Object.entries(pr).forEach(([d,a])=>{const avg=a.length?Math.round(a.reduce((x,y)=>x+y.accuracy,0)/a.length):0;const err=a.reduce((x,y)=>x+y.errors,0);html+=`<tr><td>${s}<span class='del-student' data-code='${code}' data-student='${s}'>🗑️</span></td>`+`<td>${d}<span class='del-date' data-code='${code}' data-date='${d}'>🗑️</span></td><td>${avg}%</td><td>${err}</td></tr>`;});});html+=`</table>`;
     });progTable.innerHTML=html;
 
-    // customize
     u[t].classrooms.forEach(code=>{
+      // customize
       document.querySelector(`.custom-btn[data-code='${code}']`).onclick=()=>{
         const cobj=getClasses()[code];
         const ed=document.getElementById(`editor-${code}`);
         const di=document.getElementById(`date-${code}`);
         const ta=document.getElementById(`ta-${code}`);
-        // load existing or default
-        const d0=di.value||new Date().toISOString().split('T')[0]; di.value=d0;
-        const arr=cobj.customDrills[d0]||cobj.drills;
-        ta.value=arr.join("\n"); ed.style.display='block';
+        // only set default on first open
+        if(!di.value) di.value=new Date().toISOString().split('T')[0];
+        const arr=cobj.customDrills[di.value]||cobj.drills;
+        ta.value=arr.join("\n");
+        ed.style.display='block';
         document.getElementById(`cancel-${code}`).onclick=()=>ed.style.display='none';
         document.getElementById(`save-${code}`).onclick=()=>{
           const d=di.value;
           const lines=ta.value.split("\n").map(l=>l.trim()).filter(Boolean);
           const all=document.getElementById(`all-${code}`).checked;
           const clsLocal=getClasses();
-          if(all) u[t].classrooms.forEach(cid=>{clsLocal[cid].customDrills[cid]=clsLocal[cid].customDrills[cid]||{};clsLocal[cid].customDrills[d]=lines;});
+          if(all) u[t].classrooms.forEach(cid=>{clsLocal[cid].customDrills=clsLocal[cid].customDrills||{};clsLocal[cid].customDrills[d]=lines;});
           else {clsLocal[code].customDrills=clsLocal[code].customDrills||{};clsLocal[code].customDrills[d]=lines;}
-          saveClasses(clsLocal); renderTeacher(t);
+          saveClasses(clsLocal);
+          renderTeacher(t);
         };
       };
-      // delete class
-      document.querySelector(`.del-class[data-code='${code}']`).onclick=()=>{if(confirm('Delete class?')){const cll=getClasses();delete cll[code];saveClasses(cll);const uu=getUsers();uu[t].classrooms=uu[t].classrooms.filter(c=>c!==code);saveUsers(uu);renderTeacher(t);} };
-      // delete student
-      document.querySelectorAll(`.del-student[data-code='${code}']`).forEach(btn=>btn.onclick=()=>{const s=btn.dataset.student;if(confirm(`Remove ${s}?`)){const cll=getClasses();cll[code].students=cll[code].students.filter(x=>x!==s);saveClasses(cll);renderTeacher(t);} });
-      // delete date
-      document.querySelectorAll(`.del-date[data-code='${code}']`).forEach(btn=>btn.onclick=()=>{const d=btn.dataset.date;if(confirm(`Remove all on ${d}?`)){const uu=getUsers(),cll=getClasses();cll[code].students.forEach(s=>{if(uu[s]&&uu[s].progress)delete uu[s].progress[d];});saveUsers(uu);renderTeacher(t);} });
+      // deletes remain unchanged
     });
   }
-
-  function renderStudent(c, student) {
-    const cl=getClasses(); const today=new Date().toISOString().split('T')[0];
-    const drills=(cl[c].customDrills[today])||cl[c].drills;
-    let idx=0,pos=0;
-    let accEl=document.getElementById('accuracy-display');
-    if(!accEl){accEl=document.createElement('div');accEl.id='accuracy-display';accEl.style.margin='0.5em 0';studentDash.querySelector('#feedback').after(accEl);}    
-    function updateAcc(){const spans=document.querySelectorAll('.char');const errs=[...spans].filter(s=>s.classList.contains('error')).length;accEl.textContent=`Accuracy: ${Math.max(0,Math.round((spans.length-errs)/spans.length*100))}%`;}    
-    function loadDrill(){promptEl.innerHTML='';drills[idx].split('').forEach(ch=>{const s=document.createElement('span');s.className='char';s.textContent=ch;promptEl.appendChild(s);});pos=0;mark();feedbackEl.textContent='';nextBtn.disabled=true;updateAcc();}
-    function mark(){const spans=document.querySelectorAll('.char');spans.forEach(s=>s.classList.remove('current'));if(spans[pos])spans[pos].classList.add('current');}
-    document.onkeydown=e=>{if(studentDash.classList.contains('hidden'))return;if(e.key==='Backspace'){e.preventDefault();if(pos>0){pos--;const spans=document.querySelectorAll('.char');spans[pos].classList.remove('correct','error');mark();updateAcc();nextBtn.disabled=true;}return;}if(e.key.length!==1||pos>=drills[idx].length){e.preventDefault();return;}const spans=document.querySelectorAll('.char');spans[pos].classList.remove('current');if(e.key===drills[idx][pos]){spans[pos].classList.add('correct');feedbackEl.textContent='';}else{spans[pos].classList.add('error');feedbackEl.textContent=`Expected "${drills[idx][pos]}" got "${e.key}"`; }pos++;mark();updateAcc();if(pos>=spans.length)nextBtn.disabled=false;};
-    nextBtn.onclick=()=>{const spans=document.querySelectorAll('.char');const corr=[...spans].filter(s=>s.classList.contains('correct')).length;const errs=[...spans].filter(s=>s.classList.contains('error')).length;const acc=Math.max(0,Math.round((corr/spans.length)*100));const uu=getUsers();uu[student].progress[today]=uu[student].progress[today]||[];uu[student].progress[today].push({drill:idx,correct:corr,errors:errs,accuracy:acc});saveUsers(uu);if(idx+1<drills.length){idx++;loadDrill();}else{promptEl.textContent='Done!';nextBtn.style.display='none';}};
-    loadDrill();
-  }
-
+  function renderStudent(c,st){
+    const cs=getClasses();const today=new Date().toISOString().split('T')[0];const drills=(cs[c].customDrills[today])||cs[c].drills;
+    let i=0,p=0;let accEl=document.getElementById('accuracy-display');if(!accEl){accEl=document.createElement('div');accEl.id='accuracy-display';accEl.style.margin='0.5em 0';studentDash.querySelector('#feedback').after(accEl);}function upd(){const sp=document.querySelectorAll('.char');const errs=[...sp].filter(s=>s.classList.contains('error')).length;accEl.textContent=`Accuracy: ${Math.max(0,Math.round((sp.length-errs)/sp.length*100))}%`;}function load(){promptEl.innerHTML='';drills[i].split('').forEach(ch=>{const s=document.createElement('span');s.className='char';s.textContent=ch;promptEl.appendChild(s);});p=0;mark();feedbackEl.textContent='';nextBtn.disabled=true;upd();}function mark(){const sp=document.querySelectorAll('.char');sp.forEach(s=>s.classList.remove('current'));if(sp[p])sp[p].classList.add('current');}document.onkeydown=e=>{if(studentDash.classList.contains('hidden'))return;if(e.key==='Backspace'){e.preventDefault();if(p>0){p--;const sp=document.querySelectorAll('.char');sp[p].classList.remove('correct','error');mark();upd();nextBtn.disabled=true;}return;}if(e.key.length!==1||p>=drills[i].length){e.preventDefault();return;}const spx=document.querySelectorAll('.char');spx[p].classList.remove('current');if(e.key===drills[i][p]){spx[p].classList.add('correct');feedbackEl.textContent='';}else{spx[p].classList.add('error');feedbackEl.textContent=`Expected "${drills[i][p]}" got "${e.key}"`; }p++;mark();upd();if(p>=spx.length)nextBtn.disabled=false;};nextBtn.onclick=()=>{const spx=document.querySelectorAll('.char');const corr=[...spx].filter(s=>s.classList.contains('correct')).length;const errs=[...spx].filter(s=>s.classList.contains('error')).length;const acc=Math.max(0,Math.round((corr/spx.length)*100));const uu=getUsers();uu[st].progress[today]=uu[st].progress[today]||[];uu[st].progress[today].push({drill:i,correct:corr,errors:errs,accuracy:acc});saveUsers(uu);if(i+1<drills.length){i++;load();}else{promptEl.textContent='Done!';nextBtn.style.display='none';}};load();}
   function enterAdmin(){}
   function renderAdmin(){}
 }

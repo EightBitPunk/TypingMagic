@@ -85,6 +85,7 @@ input, select, textarea {
   padding: 0.5rem;
 }
 #student-progress-table th { background: #e0eaf4; }
+.late-row { background: #fff3cd; }
 
 /* Calendar */
 #calendar table { width: 100%; border-collapse: collapse; }
@@ -94,3 +95,11 @@ input, select, textarea {
   text-align: center;
 }
 #calendar td { transition: background 0.2s; }
+
+/* Version badge */
+.version-badge {
+  position: fixed; bottom: 5px; right: 10px;
+  font-size: 0.8em; color: gray;
+  background: rgba(255,255,255,0.8); padding: 2px 5px;
+  border-radius: 3px; pointer-events: none;
+}

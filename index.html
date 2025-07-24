@@ -2,60 +2,40 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TeachType</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main>
-    <h1>TeachType</h1>
+  <main class="container">
+    <h1 class="app-title">TeachType</h1>
 
     <!-- Login Screen -->
-    <section id="login-screen">
-      <label>
-        Name:
-        <input type="text" id="username" />
-      </label>
-      <label>
-        Role:
-        <select id="role">
-          <option value="student">Student</option>
-          <option value="teacher">Teacher</option>
-        </select>
-      </label>
-      <label>
-        Password:
-        <input type="password" id="password" />
-      </label>
+    <section id="login-screen" class="card">
+      <label>Name: <input type="text" id="username" /></label>
+      <label>Role: <select id="role">
+        <option value="student">Student</option>
+        <option value="teacher">Teacher</option>
+      </select></label>
+      <label>Password: <input type="password" id="password" /></label>
       <div id="student-classroom-code" class="hidden">
-        <label>
-          Classroom Code:
-          <input type="text" id="classroom-code" />
-        </label>
+        <label>Classroom Code: <input type="text" id="classroom-code" /></label>
       </div>
-      <button id="login-btn">Login</button>
-      <div id="login-message"></div>
+      <button id="toggle-mode-btn" class="btn secondary">Sign Up</button>
+      <button id="login-btn" class="btn primary">Log In</button>
+      <div id="login-message" class="error"></div>
     </section>
 
     <!-- Teacher Dashboard -->
     <section id="teacher-dashboard" class="hidden">
       <h2>Welcome, <span id="teacher-name"></span> (Teacher)</h2>
-      <div id="classroom-setup">
-        <label>
-          Create Classroom Name:
-          <input type="text" id="new-classroom-name" />
-        </label>
-        <button id="create-classroom-btn">Create Classroom</button>
-        <div id="classroom-code-display"></div>
+      <div id="classroom-setup" class="card">
+        <label>Create Classroom Name: <input type="text" id="new-classroom-name" /></label>
+        <button id="create-classroom-btn" class="btn primary">Create Classroom</button>
+        <div id="classroom-code-display" class="info"></div>
       </div>
-      <div id="teacher-classroom-view" class="hidden">
-        <h3>Classroom: <span id="teacher-classroom-name"></span></h3>
-        <label>
-          Sort by:
-          <select id="sort-option">
-            <option value="date">Date</option>
-            <option value="name">Student Last Name</option>
-          </select>
-        </label>
+      <div id="teacher-classroom-view" class="card hidden">
+        <h3>Classes &amp; Progress</h3>
         <div id="student-progress-table"></div>
       </div>
     </section>
@@ -63,14 +43,18 @@
     <!-- Student Dashboard -->
     <section id="student-dashboard" class="hidden">
       <h2>Welcome, <span id="student-name"></span> (Student)</h2>
-      <div id="drill-container">
+      <div id="calendar" class="card"></div>
+      <div id="drill-container" class="card">
         <p id="prompt" tabindex="0"></p>
         <div id="feedback"></div>
-        <button id="next-btn" disabled>Next</button>
+        <button id="next-btn" class="btn primary" disabled>Next</button>
       </div>
-      <div id="student-stats"></div>
+      <div id="student-stats" class="info"></div>
     </section>
   </main>
+
+  <!-- Typewriter sound effect -->
+  <audio id="type-sound" src="typewriter.mp3" preload="auto"></audio>
 
   <script src="app.js"></script>
 </body>

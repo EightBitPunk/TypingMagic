@@ -1,5 +1,7 @@
 // Version 0.1.28
 
+console.log("🔥 app.js loaded! version:", document.body.querySelector('.version-badge')?.textContent);
+
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
   initApp();

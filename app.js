@@ -439,7 +439,7 @@ function initApp() {
       users[student].progress[today].push({drill:idx,correct:corr,errors:errs,accuracy:pct});
       saveUsers(users);
       if (idx+1<drills.length) { idx++; loadOne(); }
-      else { promptEl.textContent=\"Done!\"; nextBtn.style.display='none'; }
+      else { promptEl.textContent="Done!"; nextBtn.style.display='none'; }
     };
     loadOne();
   }

@@ -1,4 +1,4 @@
-// Version 0.1.35
+// Version 0.1.36
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.35';
+  badge.textContent = 'version 0.1.36';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -30,7 +30,7 @@ function initApp() {
   const lastUser = localStorage.getItem('lastUser');
   if (lastUser) document.getElementById('username').value = lastUser;
 
-  // Storage
+  // Storage helpers
   const getUsers    = () => JSON.parse(localStorage.getItem('users')    || '{}');
   const saveUsers   = u  => localStorage.setItem('users', JSON.stringify(u));
   const getClasses  = () => JSON.parse(localStorage.getItem('classrooms')|| '{}');
@@ -183,7 +183,7 @@ function initApp() {
     renderTeacher(teacherName.textContent);
   };
 
-  // Teacher (unchanged)…
+  // Render Teacher unchanged...
   function renderTeacher(t) {
     /* … */
   }
@@ -218,7 +218,7 @@ function initApp() {
     let tr = document.createElement('tr');
     for (let i=0; i<first; i++){
       const td = document.createElement('td');
-      td.style.padding='4px';
+      td.style.padding = '4px';
       tr.appendChild(td);
     }
     for (let d=1; d<=days; d++){
@@ -277,7 +277,7 @@ function initApp() {
         s.textContent = ch;
         promptEl.appendChild(s);
       });
-      pos = 0; markCurrent(); feedbackEl.textContent=''; nextBtn.disabled = true;
+      pos = 0; mark(); feedbackEl.textContent=''; nextBtn.disabled = true;
       if (idx < drills.length - 1) {
         nextBtn.textContent = 'Next';
         nextBtn.className = 'btn primary';
@@ -288,7 +288,7 @@ function initApp() {
       updateAcc();
     }
 
-    function markCurrent() {
+    function mark() {
       document.querySelectorAll('.char').forEach(s=>s.classList.remove('current'));
       document.querySelectorAll('.char')[pos]?.classList.add('current');
     }
@@ -301,21 +301,20 @@ function initApp() {
           pos--;
           const spans = document.querySelectorAll('.char');
           spans[pos].classList.remove('correct','error');
-          markCurrent(); updateAcc(); nextBtn.disabled = true;
+          mark(); updateAcc(); nextBtn.disabled = true;
         }
         return;
       }
-      if (e.key.length!==1 || pos >= drills[idx].length) { e.preventDefault(); return; }
+      if (e.key.length!==1||pos>=drills[idx].length){ e.preventDefault(); return; }
       const spans = document.querySelectorAll('.char');
       spans[pos].classList.remove('current');
       if (e.key === drills[idx][pos]) {
-        spans[pos].classList.add('correct');
-        feedbackEl.textContent = '';
+        spans[pos].classList.add('correct'); feedbackEl.textContent='';
       } else {
         spans[pos].classList.add('error');
-        feedbackEl.textContent = `Expected "${drills[idx][pos]}" got "${e.key}"`;
+        feedbackEl.textContent=`Expected "${drills[idx][pos]}" got "${e.key}"`;
       }
-      pos++; markCurrent(); updateAcc();
+      pos++; mark(); updateAcc();
       if (pos >= spans.length) nextBtn.disabled = false;
     };
 
@@ -330,12 +329,12 @@ function initApp() {
       prog[dateKey].push({ drill: idx, correct: corr, errors: errs, accuracy: pct, late: isLate });
       saveUsers(users);
 
-      // immediate calendar update
-      buildCalendar(student, code);
-
       if (idx < drills.length - 1) {
-        idx++; loadOne();
+        idx++;
+        loadOne();
       } else {
+        // final Submit: now turn green
+        buildCalendar(student, code);
         promptEl.textContent = 'Typing Drill Completed!';
         nextBtn.disabled = true;
       }
@@ -350,7 +349,7 @@ function initApp() {
     renderDrillsWithDate(code, cls.customDrills[today]||cls.drills, today, student, false);
   }
 
-  // Admin (unchanged)…
+  // Admin & deleteUser unchanged…
   function enterAdmin() { /* … */ }
   function deleteUser(u) { /* … */ }
 }

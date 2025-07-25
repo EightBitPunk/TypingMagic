@@ -1,4 +1,4 @@
-// Version 0.1.37
+// Version 0.1.38
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.37';
+  badge.textContent = 'version 0.1.38';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -26,17 +26,14 @@ function initApp() {
     'Accuracy over speed.'
   ];
 
-  // Persist last username
   const lastUser = localStorage.getItem('lastUser');
   if (lastUser) document.getElementById('username').value = lastUser;
 
-  // Storage
   const getUsers    = () => JSON.parse(localStorage.getItem('users')    || '{}');
   const saveUsers   = u  => localStorage.setItem('users', JSON.stringify(u));
   const getClasses  = () => JSON.parse(localStorage.getItem('classrooms')|| '{}');
   const saveClasses = c  => localStorage.setItem('classrooms', JSON.stringify(c));
 
-  // Logout
   const logoutBtn = document.getElementById('logout-btn');
   logoutBtn.style.display = 'none';
   logoutBtn.onclick = () => {
@@ -44,7 +41,7 @@ function initApp() {
     location.reload();
   };
 
-  // DOM refs
+  // DOM refs...
   const loginScreen = document.getElementById('login-screen');
   const loginBtn    = document.getElementById('login-btn');
   let   toggleBtn   = document.getElementById('toggle-mode-btn');
@@ -75,7 +72,7 @@ function initApp() {
   const feedbackEl  = document.getElementById('feedback');
   const nextBtn     = document.getElementById('next-btn');
 
-  // Toggle Sign‑Up / Log‑In
+  // Toggle sign-up / login
   let isSignUp = false;
   function updateMode() {
     loginBtn.textContent = isSignUp ? 'Sign Up' : 'Log In';
@@ -86,7 +83,7 @@ function initApp() {
   roleSel.onchange  = updateMode;
   updateMode();
 
-  // Auto‑login
+  // Auto-login
   const session = JSON.parse(localStorage.getItem('currentUser') || 'null');
   if (session && session.username && session.role !== 'admin') {
     const users = getUsers();
@@ -97,7 +94,7 @@ function initApp() {
     localStorage.removeItem('currentUser');
   }
 
-  // Login / Sign‑Up
+  // Login / sign-up
   loginBtn.onclick = () => {
     loginMsg.textContent = '';
     const u    = userIn.value.trim();
@@ -105,19 +102,14 @@ function initApp() {
     const role = roleSel.value;
     const code = classIn.value.trim();
 
-    // Admin
-    if (u === 'KEFKA' && p === 'SUCKS') {
-      enterAdmin();
-      return;
-    }
-    if (!u || !p || (isSignUp && role === 'student' && !code)) {
-      loginMsg.textContent = 'Complete all fields.';
-      return;
+    if (u==='KEFKA' && p==='SUCKS') { enterAdmin(); return; }
+    if (!u || !p || (isSignUp && role==='student' && !code)) {
+      loginMsg.textContent = 'Complete all fields.'; return;
     }
 
     const users = getUsers();
     if (isSignUp) {
-      if (users[u]) { loginMsg.textContent = 'User exists.'; return; }
+      if (users[u]) { loginMsg.textContent='User exists.'; return; }
       users[u] = {
         password: p,
         role,
@@ -140,7 +132,7 @@ function initApp() {
         localStorage.setItem('currentUser', JSON.stringify({username:u,role}));
         enterDash(u, role);
       } else {
-        loginMsg.textContent = 'Incorrect credentials.';
+        loginMsg.textContent='Incorrect credentials.';
       }
     }
   };
@@ -148,7 +140,7 @@ function initApp() {
   function enterDash(u, role) {
     logoutBtn.style.display = 'block';
     loginScreen.classList.add('hidden');
-    if (role === 'teacher') {
+    if (role==='teacher') {
       teacherName.textContent = u;
       teacherDash.classList.remove('hidden');
       classSetup.classList.remove('hidden');
@@ -161,22 +153,26 @@ function initApp() {
     }
   }
 
-  // Create Classroom
+  // Create classroom
   createBtn.onclick = () => {
     const name = newClassIn.value.trim();
     if (!name) return;
-    const code = 'C'+Math.floor(100000+Math.random()*900000);
+    const newCode = 'C'+Math.floor(100000+Math.random()*900000);
     const cls = getClasses();
-    cls[code] = { name, teacher:teacherName.textContent, students:[], drills:defaultDrills.slice(), customDrills:{} };
+    cls[newCode] = {
+      name, teacher:teacherName.textContent,
+      students:[], drills:defaultDrills.slice(),
+      customDrills:{}
+    };
     saveClasses(cls);
     const us = getUsers();
-    us[teacherName.textContent].classrooms.push(code);
+    us[teacherName.textContent].classrooms.push(newCode);
     saveUsers(us);
-    codeDisp.textContent = `New Code: ${code}`;
+    codeDisp.textContent = `New Code: ${newCode}`;
     renderTeacher(teacherName.textContent);
   };
 
-  // Render Teacher (unchanged) …
+  // Render teacher unchanged…
   function renderTeacher(t){ /* … */ }
 
   // Student view
@@ -185,16 +181,16 @@ function initApp() {
     loadDrills(code, student);
   }
 
-  // Calendar now turns today green if completed:
+  // Calendar logic fixed
   function buildCalendar(student, code) {
     const cls  = getClasses()[code];
-    const prog = getUsers()[student].progress || {};
+    const prog = (getUsers()[student].progress)||{};
     const today = new Date();
     const year  = today.getFullYear(),
           m     = today.getMonth(),
           first = new Date(year,m,1).getDay(),
           days  = new Date(year,m+1,0).getDate(),
-          todayDate = today.getDate();
+          todayD= today.getDate();
 
     let cal = document.getElementById('calendar');
     cal.innerHTML = '';
@@ -202,35 +198,40 @@ function initApp() {
     tbl.style.borderCollapse = 'collapse';
     const hdr = document.createElement('tr');
     ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{
-      const th = document.createElement('th');
-      th.textContent = d; th.style.padding='4px'; hdr.appendChild(th);
+      const th=document.createElement('th');
+      th.textContent=d; th.style.padding='4px'; hdr.appendChild(th);
     });
     tbl.appendChild(hdr);
 
-    let tr = document.createElement('tr');
+    let tr=document.createElement('tr');
     for(let i=0;i<first;i++){
       const td=document.createElement('td'); td.style.padding='4px'; tr.appendChild(td);
     }
     for(let d=1; d<=days; d++){
-      if((first+d-1)%7===0 && d!==1){
+      if((first+d-1)%7===0&&d!==1){
         tbl.appendChild(tr); tr=document.createElement('tr');
       }
       const td=document.createElement('td');
       td.textContent=d;
       td.style.width='24px'; td.style.height='24px'; td.style.textAlign='center';
-      const key = `${year}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const key=`${year}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       td.style.cursor='pointer';
 
-      const done = Boolean(prog[key]);
-      if (d < todayDate || (d === todayDate && done)) {
-        td.style.background='lightgreen';
-        td.onclick = ()=>alert("You've already completed your drill for this day!");
-      } else if (d === todayDate) {
-        td.style.background='lightblue';
-      } else if (d < todayDate) {
-        td.style.background='lightcoral';
-        td.onclick = ()=>handlePast(code, key, student);
+      if (d < todayD) {
+        // past
+        if (prog[key]) td.style.background='lightgreen';
+        else {
+          td.style.background='lightcoral';
+          td.onclick=()=>handlePast(code,key,student);
+        }
+      } else if (d === todayD) {
+        // today
+        if (prog[key]) td.style.background='lightgreen';
+        else {
+          td.style.background='lightblue';
+        }
       } else {
+        // future
         td.style.background='lightgray';
       }
       tr.appendChild(td);
@@ -239,16 +240,16 @@ function initApp() {
     cal.appendChild(tbl);
   }
 
-  function handlePast(code, key, student){
+  function handlePast(code, key, student) {
     const cls = getClasses()[code];
-    const arr = cls.customDrills[key] || cls.drills;
-    if(!confirm(`Preview drill for ${key}?\n\n${arr.join('\n')}\n\nMake up now?`)) return;
+    const arr = cls.customDrills[key]||cls.drills;
+    if (!confirm(`Preview drill for ${key}?\n\n${arr.join('\n')}\n\nMake up now?`)) return;
     renderDrillsWithDate(code, arr, key, student, true);
   }
 
   function renderDrillsWithDate(code, drills, dateKey, student, isLate) {
     let idx=0, pos=0;
-    const statsDiv = document.getElementById('student-stats');
+    const statsDiv=document.getElementById('student-stats');
     statsDiv.textContent='';
 
     function updateAcc(){
@@ -258,7 +259,8 @@ function initApp() {
       statsDiv.textContent=`Accuracy: ${pct}%`;
     }
     function loadOne(){
-      promptEl.innerHTML=''; drills[idx].split('').forEach(ch=>{
+      promptEl.innerHTML='';
+      drills[idx].split('').forEach(ch=>{
         const s=document.createElement('span');
         s.className='char'; s.textContent=ch; promptEl.appendChild(s);
       });
@@ -310,7 +312,7 @@ function initApp() {
       if(idx<drills.length-1){
         idx++; loadOne();
       } else {
-        // final submit: now green today's or past date
+        // submit → turn green
         buildCalendar(student, code);
         promptEl.textContent='Typing Drill Completed!';
         nextBtn.disabled=true;

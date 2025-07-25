@@ -17,8 +17,6 @@ body {
   color: #102a43;
   margin-bottom: 1rem;
 }
-
-/* Cards */
 .card {
   background: #fff;
   border-radius: 8px;
@@ -26,8 +24,6 @@ body {
   padding: 1.5rem;
   margin-bottom: 1.5rem;
 }
-
-/* Buttons */
 .btn {
   border: none;
   border-radius: 4px;
@@ -37,10 +33,8 @@ body {
   margin: 0.5rem 0.25rem 0;
 }
 .btn.primary   { background: #2f80ed; color: #fff; }
-.btn.secondary { background: #e0eaf4; color: #334e68; opacity: 1; }
+.btn.secondary { background: #e0eaf4; color: #334e68; }
 .btn:disabled  { opacity: 0.5; cursor: default; }
-
-/* Inputs & labels */
 label { display: block; margin: 0.75rem 0; }
 input, select, textarea {
   width: 100%;
@@ -50,15 +44,9 @@ input, select, textarea {
   font-size: 1rem;
   margin-top: 0.25rem;
 }
-
-/* Hidden */
 .hidden { display: none; }
-
-/* Error & Info */
 .error { color: #c53030; margin-top: 0.5rem; }
 .info  { color: #2f80ed; margin-top: 0.5rem; }
-
-/* Prompt */
 #prompt {
   background: #f0f4f8;
   padding: 1rem;
@@ -70,11 +58,7 @@ input, select, textarea {
 #prompt .correct { color: #2d9cdb; }
 #prompt .error   { color: #eb5757; }
 #prompt .current { text-decoration: underline; color: #f2c94c; }
-
-/* Feedback */
 #feedback { min-height: 1.2em; margin: 0.5rem 0; }
-
-/* Progress table */
 #student-progress-table table {
   width: 100%;
   border-collapse: collapse;
@@ -86,8 +70,6 @@ input, select, textarea {
 }
 #student-progress-table th { background: #e0eaf4; }
 .late-row { background: #fff3cd; }
-
-/* Calendar */
 #calendar table { width: 100%; border-collapse: collapse; }
 #calendar th, #calendar td {
   border: 1px solid #bcccdc;
@@ -95,8 +77,6 @@ input, select, textarea {
   text-align: center;
 }
 #calendar td { transition: background 0.2s; }
-
-/* Version badge */
 .version-badge {
   position: fixed; bottom: 5px; right: 10px;
   font-size: 0.8em; color: gray;

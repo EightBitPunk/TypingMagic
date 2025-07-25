@@ -30,7 +30,7 @@ function initApp() {
   const lastUser = localStorage.getItem('lastUser');
   if (lastUser) document.getElementById('username').value = lastUser;
 
-  // Storage helpers
+  // Storage
   const getUsers    = () => JSON.parse(localStorage.getItem('users')    || '{}');
   const saveUsers   = u  => localStorage.setItem('users', JSON.stringify(u));
   const getClasses  = () => JSON.parse(localStorage.getItem('classrooms')|| '{}');
@@ -45,37 +45,37 @@ function initApp() {
   };
 
   // DOM refs
-  const loginScreen  = document.getElementById('login-screen');
-  const loginBtn     = document.getElementById('login-btn');
-  let   toggleBtn    = document.getElementById('toggle-mode-btn');
+  const loginScreen = document.getElementById('login-screen');
+  const loginBtn    = document.getElementById('login-btn');
+  let   toggleBtn   = document.getElementById('toggle-mode-btn');
   if (!toggleBtn) {
     toggleBtn = document.createElement('button');
     toggleBtn.id = 'toggle-mode-btn';
     loginScreen.appendChild(toggleBtn);
   }
-  const userIn       = document.getElementById('username');
-  const passIn       = document.getElementById('password');
-  const roleSel      = document.getElementById('role');
-  const loginMsg     = document.getElementById('login-message');
-  const classIn      = document.getElementById('classroom-code');
-  const studentWrap  = document.getElementById('student-classroom-code');
+  const userIn      = document.getElementById('username');
+  const passIn      = document.getElementById('password');
+  const roleSel     = document.getElementById('role');
+  const loginMsg    = document.getElementById('login-message');
+  const classIn     = document.getElementById('classroom-code');
+  const studentWrap = document.getElementById('student-classroom-code');
 
-  const teacherDash  = document.getElementById('teacher-dashboard');
-  const classSetup   = document.getElementById('classroom-setup');
-  const teacherView  = document.getElementById('teacher-classroom-view');
-  const createBtn    = document.getElementById('create-classroom-btn');
-  const newClassIn   = document.getElementById('new-classroom-name');
-  const codeDisp     = document.getElementById('classroom-code-display');
-  const teacherName  = document.getElementById('teacher-name');
-  const progTable    = document.getElementById('student-progress-table');
+  const teacherDash = document.getElementById('teacher-dashboard');
+  const classSetup  = document.getElementById('classroom-setup');
+  const teacherView = document.getElementById('teacher-classroom-view');
+  const createBtn   = document.getElementById('create-classroom-btn');
+  const newClassIn  = document.getElementById('new-classroom-name');
+  const codeDisp    = document.getElementById('classroom-code-display');
+  const teacherName = document.getElementById('teacher-name');
+  const progTable   = document.getElementById('student-progress-table');
 
-  const studentDash  = document.getElementById('student-dashboard');
-  const studentName  = document.getElementById('student-name');
-  const promptEl     = document.getElementById('prompt');
-  const feedbackEl   = document.getElementById('feedback');
-  const nextBtn      = document.getElementById('next-btn');
+  const studentDash = document.getElementById('student-dashboard');
+  const studentName = document.getElementById('student-name');
+  const promptEl    = document.getElementById('prompt');
+  const feedbackEl  = document.getElementById('feedback');
+  const nextBtn     = document.getElementById('next-btn');
 
-  // Sign‑Up / Log‑In toggle
+  // Sign‑Up toggle
   let isSignUp = false;
   function updateMode() {
     loginBtn.textContent = isSignUp ? 'Sign Up' : 'Log In';
@@ -97,7 +97,7 @@ function initApp() {
     localStorage.removeItem('currentUser');
   }
 
-  // Handle Login / Sign‑Up
+  // Login / Sign‑Up
   loginBtn.onclick = () => {
     loginMsg.textContent = '';
     const u    = userIn.value.trim();
@@ -111,19 +111,18 @@ function initApp() {
       return;
     }
     if (!u || !p || (isSignUp && role==='student' && !code)) {
-      loginMsg.textContent = 'Complete all fields.';
-      return;
+      loginMsg.textContent = 'Complete all fields.'; return;
     }
 
     const users = getUsers();
     if (isSignUp) {
-      if (users[u]) { loginMsg.textContent = 'User exists.'; return; }
+      if (users[u]) { loginMsg.textContent='User exists.'; return; }
       users[u] = {
-        password: p,
+        password:p,
         role,
-        progress: {},
-        classrooms: role==='teacher'?[]:undefined,
-        classroomCode: role==='student'?code:undefined
+        progress:{},
+        classrooms:role==='teacher'?[]:undefined,
+        classroomCode:role==='student'?code:undefined
       };
       if (role==='student') {
         const cls = getClasses();
@@ -141,14 +140,14 @@ function initApp() {
         localStorage.setItem('currentUser', JSON.stringify({username:u, role}));
         enterDash(u, role);
       } else {
-        loginMsg.textContent = 'Incorrect credentials.';
+        loginMsg.textContent='Incorrect credentials.';
       }
     }
   };
 
   // Enter Dashboard
   function enterDash(u, role) {
-    logoutBtn.style.display = 'block';
+    logoutBtn.style.display='block';
     loginScreen.classList.add('hidden');
     if (role==='teacher') {
       teacherName.textContent = u;
@@ -231,21 +230,17 @@ function initApp() {
         if (!di.value) di.value = new Date().toISOString().split('T')[0];
         ta.value = (cobj.customDrills[di.value]||cobj.drills).join('\n');
         allCk.checked = false;
-        editor.style.display = 'block';
+        editor.style.display='block';
       };
-      di.onchange = () => {
-        ta.value = (cobj.customDrills[di.value]||[]).join('\n');
-      };
-      document.getElementById(`cancel-${code}`).onclick = () => {
-        editor.style.display = 'none';
-      };
+      di.onchange = () => { ta.value = (cobj.customDrills[di.value]||[]).join('\n'); };
+      document.getElementById(`cancel-${code}`).onclick = () => editor.style.display='none';
       document.getElementById(`save-${code}`).onclick = () => {
         const d = di.value;
         const lines = ta.value.split('\n').map(l=>l.trim()).filter(Boolean);
         const all = allCk.checked;
         const clsL = getClasses();
         if (all) {
-          us[t].classrooms.forEach(cid => {
+          us[t].classrooms.forEach(cid=>{
             clsL[cid].customDrills = clsL[cid].customDrills||{};
             clsL[cid].customDrills[d] = lines;
           });
@@ -266,8 +261,8 @@ function initApp() {
         renderTeacher(t);
       };
 
-      document.querySelectorAll(`.del-student[data-code="${code}"]`).forEach(b => {
-        b.onclick = () => {
+      document.querySelectorAll(`.del-student[data-code="${code}"]`).forEach(b=>{
+        b.onclick = ()=>{
           const s = b.dataset.student;
           if (!confirm(`Remove student ${s}?`)) return;
           const cl = getClasses();
@@ -277,14 +272,12 @@ function initApp() {
         };
       });
 
-      document.querySelectorAll(`.del-date[data-code="${code}"]`).forEach(b => {
-        b.onclick = () => {
+      document.querySelectorAll(`.del-date[data-code="${code}"]`).forEach(b=>{
+        b.onclick = ()=>{
           const d = b.dataset.date;
           if (!confirm(`Remove all completions on ${d}?`)) return;
           const uu = getUsers(), cl = getClasses();
-          cl[code].students.forEach(s => {
-            if (uu[s]?.progress) delete uu[s].progress[d];
-          });
+          cl[code].students.forEach(s=>{ if (uu[s]?.progress) delete uu[s].progress[d]; });
           saveUsers(uu);
           renderTeacher(t);
         };
@@ -312,43 +305,37 @@ function initApp() {
     const tbl = document.createElement('table');
     tbl.style.borderCollapse = 'collapse';
     const hdr = document.createElement('tr');
-    ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => {
-      const th = document.createElement('th');
-      th.textContent = d; th.style.padding = '4px';
-      hdr.appendChild(th);
+    ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{
+      const th=document.createElement('th');
+      th.textContent=d; th.style.padding='4px'; hdr.appendChild(th);
     });
     tbl.appendChild(hdr);
 
     let tr = document.createElement('tr');
-    for (let i=0; i<first; i++){
-      const td = document.createElement('td');
-      td.style.padding = '4px';
-      tr.appendChild(td);
+    for(let i=0;i<first;i++){
+      const td=document.createElement('td');
+      td.style.padding='4px'; tr.appendChild(td);
     }
-    for (let d=1; d<=days; d++){
-      if ((first+d-1)%7===0 && d!==1) {
-        tbl.appendChild(tr);
-        tr = document.createElement('tr');
+    for(let d=1; d<=days; d++){
+      if((first+d-1)%7===0&&d!==1){
+        tbl.appendChild(tr); tr=document.createElement('tr');
       }
-      const td = document.createElement('td');
-      td.textContent = d;
-      td.style.width = '24px';
-      td.style.height = '24px';
-      td.style.textAlign = 'center';
-      const key = `${year}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      if (d < today.getDate()) {
-        td.style.cursor = 'pointer';
-        if (prog[key]) {
-          td.style.background = 'lightgreen';
-          td.onclick = () => alert("You've already completed your drill for this day!");
+      const td=document.createElement('td');
+      td.textContent=d; td.style.width='24px'; td.style.height='24px'; td.style.textAlign='center';
+      const key=`${year}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      td.style.cursor='pointer';
+      if(d<today.getDate()){
+        if(prog[key]){
+          td.style.background='lightgreen';
+          td.onclick=()=>alert("You've already completed your drill for this day!");
         } else {
-          td.style.background = 'lightcoral';
-          td.onclick = () => handlePast(key, student, code);
+          td.style.background='lightcoral';
+          td.onclick=()=>handlePast(key, student, code);
         }
-      } else if (d===today.getDate()) {
-        td.style.background = 'lightblue';
+      } else if(d===today.getDate()){
+        td.style.background='lightblue';
       } else {
-        td.style.background = 'lightgray';
+        td.style.background='lightgray';
       }
       tr.appendChild(td);
     }
@@ -358,92 +345,98 @@ function initApp() {
 
   function handlePast(key, student, code) {
     const cls = getClasses()[code];
-    const arr = cls.customDrills[key] || cls.drills;
-    if (!confirm(`Preview drill for ${key}?\n\n${arr.join('\n')}\n\nMake up now?`)) return;
-    // Late submission
+    const arr = cls.customDrills[key]||cls.drills;
+    if(!confirm(`Preview drill for ${key}?\n\n${arr.join('\n')}\n\nMake up now?`)) return;
     renderDrillsWithDate(arr, key, student, true);
   }
 
   function renderDrillsWithDate(drills, dateKey, student, isLate) {
     let idx=0, pos=0;
-    const statsDiv = document.getElementById('student-stats');
-    statsDiv.textContent = '';
-    function updateAcc() {
-      const spans = document.querySelectorAll('.char');
-      const errs  = [...spans].filter(s=>s.classList.contains('error')).length;
-      const pct   = Math.max(0, Math.round((spans.length-errs)/spans.length*100));
-      statsDiv.textContent = `Accuracy: ${pct}%`;
+    const statsDiv=document.getElementById('student-stats');
+    statsDiv.textContent='';
+
+    function updateAcc(){
+      const spans=document.querySelectorAll('.char');
+      const errs=[...spans].filter(s=>s.classList.contains('error')).length;
+      const pct=Math.max(0,Math.round((spans.length-errs)/spans.length*100));
+      statsDiv.textContent=`Accuracy: ${pct}%`;
     }
-    function loadOne() {
-      promptEl.innerHTML = '';
-      drills[idx].split('').forEach(ch => {
-        const s = document.createElement('span');
-        s.className = 'char';
-        s.textContent = ch;
-        promptEl.appendChild(s);
+    function loadOne(){
+      promptEl.innerHTML='';
+      drills[idx].split('').forEach(ch=>{
+        const s=document.createElement('span');
+        s.className='char'; s.textContent=ch; promptEl.appendChild(s);
       });
-      pos=0; mark(); feedbackEl.textContent=''; nextBtn.disabled=true; updateAcc(); nextBtn.style.display='inline-block';
+      pos=0; mark(); feedbackEl.textContent=''; nextBtn.disabled=true;
+      nextBtn.textContent = idx<drills.length-1 ? 'Next' : 'Submit';
+      nextBtn.className='btn ' + (idx<drills.length-1?'primary':'secondary');
+      updateAcc();
     }
-    function mark() {
+    function mark(){
       document.querySelectorAll('.char').forEach(s=>s.classList.remove('current'));
       document.querySelectorAll('.char')[pos]?.classList.add('current');
     }
-    document.onkeydown = e => {
-      if (studentDash.classList.contains('hidden')) return;
-      if (e.key==='Backspace') {
+    document.onkeydown=e=>{
+      if(studentDash.classList.contains('hidden'))return;
+      if(e.key==='Backspace'){
         e.preventDefault();
-        if (pos>0) {
-          pos--;
-          const spans=document.querySelectorAll('.char');
+        if(pos>0){
+          pos--; const spans=document.querySelectorAll('.char');
           spans[pos].classList.remove('correct','error');
           mark(); updateAcc(); nextBtn.disabled=true;
         }
         return;
       }
-      if (e.key.length!==1||pos>=drills[idx].length){ e.preventDefault(); return; }
-      const spans = document.querySelectorAll('.char');
+      if(e.key.length!==1||pos>=drills[idx].length){e.preventDefault(); return;}
+      const spans=document.querySelectorAll('.char');
       spans[pos].classList.remove('current');
-      if (e.key===drills[idx][pos]) {
+      if(e.key===drills[idx][pos]){
         spans[pos].classList.add('correct'); feedbackEl.textContent='';
       } else {
         spans[pos].classList.add('error');
         feedbackEl.textContent=`Expected "${drills[idx][pos]}" got "${e.key}"`;
       }
       pos++; mark(); updateAcc();
-      if (pos>=spans.length) nextBtn.disabled=false;
+      if(pos>=spans.length) nextBtn.disabled=false;
     };
-    nextBtn.onclick = () => {
-      const spans = document.querySelectorAll('.char');
-      const corr  = [...spans].filter(s=>s.classList.contains('correct')).length;
-      const errs  = [...spans].filter(s=>s.classList.contains('error')).length;
-      const pct   = Math.max(0, Math.round((corr/spans.length)*100));
-      const users = getUsers();
-      const prog  = users[student].progress;
-      if (!prog[dateKey]) prog[dateKey] = [];
-      prog[dateKey].push({drill:idx,correct:corr,errors:errs,accuracy:pct,late:isLate});
-      saveUsers(users);
-      buildCalendar(student, code);  // refresh calendar green
-      if (idx+1<drills.length) {
+    nextBtn.onclick=()=>{
+      if(idx<drills.length-1){
+        // record and next
+        record();
         idx++; loadOne();
       } else {
-        promptEl.textContent = "Done!";
-        nextBtn.style.display = 'none';
+        // final submit
+        record();
+        promptEl.textContent="Typing Drill Completed!";
+        nextBtn.style.display='none';
+        buildCalendar(student, code);
       }
     };
+    function record(){
+      const spans=document.querySelectorAll('.char');
+      const corr=[...spans].filter(s=>s.classList.contains('correct')).length;
+      const errs=[...spans].filter(s=>s.classList.contains('error')).length;
+      const pct=Math.max(0,Math.round((corr/spans.length)*100));
+      const users=getUsers();
+      const prog=users[student].progress;
+      if(!prog[dateKey]) prog[dateKey]=[];
+      prog[dateKey].push({drill:idx,correct:corr,errors:errs,accuracy:pct,late:isLate});
+      saveUsers(users);
+    }
     loadOne();
   }
 
-  function loadDrills(code, student) {
-    const cls = getClasses()[code];
-    const today = new Date().toISOString().split('T')[0];
+  function loadDrills(code, student){
+    const cls=getClasses()[code];
+    const today=new Date().toISOString().split('T')[0];
     renderDrillsWithDate(cls.customDrills[today]||cls.drills, today, student, false);
   }
 
   // Admin
   function enterAdmin(){
-    const ex = document.getElementById('admin'); if(ex) ex.remove();
-    const panel = document.createElement('div'); panel.id='admin'; panel.style.padding='1em';
-    panel.innerHTML = `
+    const ex=document.getElementById('admin'); if(ex) ex.remove();
+    const panel=document.createElement('div'); panel.id='admin'; panel.style.padding='1em';
+    panel.innerHTML=`
       <h2>Admin Panel</h2>
       <button id="admin-logout" class="btn secondary">Log Out</button>
       <button id="cleanup-students" class="btn secondary">Delete orphan students</button>
@@ -454,42 +447,37 @@ function initApp() {
       </table>`;
     document.body.appendChild(panel);
 
-    document.getElementById('admin-logout').onclick = () => {
-      localStorage.removeItem('currentUser');
-      location.reload();
+    document.getElementById('admin-logout').onclick=()=>{
+      localStorage.removeItem('currentUser'); location.reload();
     };
-
-    const users   = getUsers();
-    const classes = getClasses();
-    const valid   = new Set(Object.keys(classes));
-    const body = document.getElementById('admin-body');
-    body.innerHTML='';
+    const users=getUsers(), classes=getClasses(), valid=new Set(Object.keys(classes));
+    const body=document.getElementById('admin-body'); body.innerHTML='';
     Object.entries(users).forEach(([u,d])=>{
-      let info = d.role==='teacher'
+      let info=d.role==='teacher'
         ? (d.classrooms||[]).join(', ')
         : (d.classroomCode||'');
-      if (d.role==='student' && !valid.has(d.classroomCode)) {
-        info = `<span style="color:red">${info||'none'}</span>`;
+      if(d.role==='student'&&!valid.has(d.classroomCode)){
+        info=`<span style="color:red">${info||'none'}</span>`;
       }
       const tr=document.createElement('tr');
-      tr.innerHTML = `
+      tr.innerHTML=`
         <td>${u}</td><td>${d.role}</td><td>${info}</td>
         <td><button data-user="${u}" class="del-user btn secondary">Delete</button></td>`;
       body.appendChild(tr);
     });
     document.querySelectorAll('.del-user').forEach(b=>b.onclick=()=>{
-      const u=b.dataset.user; if(!confirm(`Delete ${u}?`)) return;
+      const u=b.dataset.user; if(!confirm(`Delete ${u}?`))return;
       deleteUser(u); enterAdmin();
     });
-    document.getElementById('cleanup-students').onclick = ()=>{
-      if(!confirm('Delete orphan students?')) return;
+    document.getElementById('cleanup-students').onclick=()=>{
+      if(!confirm('Delete orphan students?'))return;
       const u2=getUsers(); Object.entries(u2).forEach(([u,d])=>{
         if(d.role==='student'&&!valid.has(d.classroomCode)) delete u2[u];
       });
       saveUsers(u2); enterAdmin();
     };
-    document.getElementById('cleanup-teachers').onclick = ()=>{
-      if(!confirm('Delete orphan teachers?')) return;
+    document.getElementById('cleanup-teachers').onclick=()=>{
+      if(!confirm('Delete orphan teachers?'))return;
       const u2=getUsers(); Object.entries(u2).forEach(([u,d])=>{
         if(d.role==='teacher'&&(!d.classrooms||d.classrooms.length===0)) delete u2[u];
       });
@@ -504,7 +492,7 @@ function initApp() {
       saveClasses(cl);
     } else {
       const cc=us[u].classroomCode;
-      if(cl[cc]) cl[cc].students = cl[cc].students.filter(x=>x!==u);
+      if(cl[cc]) cl[cc].students=cl[cc].students.filter(x=>x!==u);
       saveClasses(cl);
     }
     delete us[u]; saveUsers(us);

@@ -1,4 +1,4 @@
-// Version 0.1.40
+// Version 0.1.41
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.40';
+  badge.textContent = 'version 0.1.41';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -187,29 +187,42 @@ function initApp() {
     (users[t].classrooms || []).forEach(code => {
       const c = cls[code];
       if (!c) return;
-      html += `<h3>${c.name} (Code: ${code})
+
+      // Class header + controls
+      html += `<h3>
+        ${c.name} (Code: ${code})
         <button class="custom-btn" data-code="${code}">Customize Drills</button>
-        <span class="del-class" data-code="${code}">🗑️</span>
+        <button class="bulk-btn"   data-code="${code}">Bulk Upload</button>
+        <span class="del-class"    data-code="${code}">🗑️</span>
       </h3>`;
+
+      // Bulk file input (hidden)
+      html += `<input type="file" id="bulk-file-${code}" accept=".csv,.txt" class="hidden" />`;
+
+      // Editor panel
       html += `<div id="editor-${code}" class="card" style="display:none;">
         <label>Date: <input type="date" id="date-${code}" /></label>
-        <label style="margin-left:.5em;"><input type="checkbox" id="all-${code}" /> All Classes</label><br>
+        <label style="margin-left:.5em;">
+          <input type="checkbox" id="all-${code}" /> All Classes
+        </label><br>
         <textarea id="ta-${code}" rows="4" style="width:100%"></textarea><br>
-        <button id="save-${code}" class="btn primary">Save</button>
+        <button id="save-${code}"   class="btn primary">Save</button>
         <button id="cancel-${code}" class="btn secondary">Cancel</button>
       </div>`;
+
+      // Progress table
       html += `<table><tr><th>Student</th><th>Date</th><th>Acc</th><th>Err</th></tr>`;
       (c.students || []).forEach(s => {
         const pr = users[s].progress || {};
         Object.entries(pr).forEach(([d,arr]) => {
-          const avg = arr.length
+          const avg  = arr.length
             ? Math.round(arr.reduce((sum,x)=>sum+x.accuracy,0)/arr.length)
             : 0;
-          const err = arr.reduce((sum,x)=>sum+x.errors,0);
+          const err  = arr.reduce((sum,x)=>sum+x.errors,0);
           const late = arr.some(r=>r.late);
           html += `<tr class="${late?'late-row':''}">
             <td>${s} <span class="del-student" data-code="${code}" data-student="${s}">🗑️</span></td>
-            <td>${d} <span class="del-date" data-code="${code}" data-date="${d}">🗑️</span></td>
+            <td>${d} <span class="del-date"    data-code="${code}" data-date="${d}">🗑️</span></td>
             <td>${avg}%</td><td>${err}</td>
           </tr>`;
         });
@@ -218,7 +231,7 @@ function initApp() {
     });
     progTable.innerHTML = html;
 
-    // Wire up all teacher buttons
+    // Wire up per-class buttons
     (users[t].classrooms || []).forEach(code => {
       const cobj   = cls[code];
       const editor = document.getElementById(`editor-${code}`);
@@ -226,32 +239,38 @@ function initApp() {
       const ta     = document.getElementById(`ta-${code}`);
       const allCk  = document.getElementById(`all-${code}`);
 
+      // Customize Drills
       document.querySelector(`.custom-btn[data-code="${code}"]`).onclick = () => {
         if (!di.value) di.value = new Date().toISOString().split('T')[0];
-        ta.value = (cobj.customDrills[di.value]||cobj.drills).join('\n');
+        ta.value = (cobj.customDrills[di.value] || cobj.drills).join('\n');
         allCk.checked = false;
         editor.style.display = 'block';
       };
-      di.onchange = () => ta.value = (cobj.customDrills[di.value]||[]).join('\n');
-      document.getElementById(`cancel-${code}`).onclick = () => editor.style.display='none';
+      di.onchange = () => {
+        ta.value = (cobj.customDrills[di.value]||[]).join('\n');
+      };
+      document.getElementById(`cancel-${code}`).onclick = () => {
+        editor.style.display='none';
+      };
       document.getElementById(`save-${code}`).onclick = () => {
-        const d = di.value;
+        const d     = di.value;
         const lines = ta.value.split('\n').map(l=>l.trim()).filter(Boolean);
-        const all = allCk.checked;
-        const clsLocal = getClasses();
+        const all   = allCk.checked;
+        const clsL  = getClasses();
         if (all) {
-          users[t].classrooms.forEach(cid=>{
-            clsLocal[cid].customDrills = clsLocal[cid].customDrills||{};
-            clsLocal[cid].customDrills[d] = lines;
+          users[t].classrooms.forEach(cid => {
+            clsL[cid].customDrills = clsL[cid].customDrills||{};
+            clsL[cid].customDrills[d] = lines;
           });
         } else {
-          clsLocal[code].customDrills = clsLocal[code].customDrills||{};
-          clsLocal[code].customDrills[d] = lines;
+          clsL[code].customDrills = clsL[code].customDrills||{};
+          clsL[code].customDrills[d] = lines;
         }
-        saveClasses(clsLocal);
+        saveClasses(clsL);
         renderTeacher(t);
       };
 
+      // Delete Class
       document.querySelector(`.del-class[data-code="${code}"]`).onclick = () => {
         if (!confirm('Delete entire class?')) return;
         const allCl = getClasses(); delete allCl[code]; saveClasses(allCl);
@@ -261,6 +280,7 @@ function initApp() {
         renderTeacher(t);
       };
 
+      // Delete Student
       document.querySelectorAll(`.del-student[data-code="${code}"]`).forEach(btn=>{
         btn.onclick = () => {
           const s = btn.dataset.student;
@@ -272,16 +292,57 @@ function initApp() {
         };
       });
 
+      // Delete Date
       document.querySelectorAll(`.del-date[data-code="${code}"]`).forEach(btn=>{
         btn.onclick = () => {
           const d = btn.dataset.date;
           if (!confirm(`Remove all completions on ${d}?`)) return;
           const uu = getUsers(), cl = getClasses();
-          cl[code].students.forEach(s=>{ if (uu[s]?.progress) delete uu[s].progress[d]; });
+          cl[code].students.forEach(s=>{
+            if (uu[s]?.progress) delete uu[s].progress[d];
+          });
           saveUsers(uu);
           renderTeacher(t);
         };
       });
+
+      // **Bulk Upload** wiring
+      const bulkBtn   = document.querySelector(`.bulk-btn[data-code="${code}"]`);
+      const fileInput = document.getElementById(`bulk-file-${code}`);
+      bulkBtn.onclick = () => {
+        fileInput.classList.remove('hidden');
+        fileInput.click();
+      };
+      fileInput.onchange = async (evt) => {
+        const file = evt.target.files[0];
+        if (!file) return;
+        const text = await file.text();
+        // Parse bracketed format: date [drill][drill]...
+        const lines = text.split(/\r?\n/).filter(Boolean);
+        const clsLocal = getClasses();
+        clsLocal[code].customDrills = clsLocal[code].customDrills||{};
+        const applyAll = confirm('Apply these drills to ALL of your classes?');
+        lines.forEach(line => {
+          //   e.g. 2025-08-01[Sentence, with comma][Another sentence]
+          const datePart = line.split('[')[0].trim();
+          const drills   = Array.from(line.matchAll(/\[([^\]]+)\]/g))
+                              .map(m=>m[1].trim())
+                              .filter(Boolean);
+          if (!datePart || drills.length===0) return;
+          if (applyAll) {
+            getUsers()[t].classrooms.forEach(cid=>{
+              clsLocal[cid].customDrills = clsLocal[cid].customDrills||{};
+              clsLocal[cid].customDrills[datePart] = drills;
+            });
+          } else {
+            clsLocal[code].customDrills[datePart] = drills;
+          }
+        });
+        saveClasses(clsLocal);
+        fileInput.value = '';
+        fileInput.classList.add('hidden');
+        renderTeacher(t);
+      };
     });
   }
 

@@ -1,4 +1,4 @@
-// Version 0.1.39
+// Version 0.1.40
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.39';
+  badge.textContent = 'version 0.1.40';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -180,7 +180,7 @@ function initApp() {
     renderTeacher(teacherName.textContent);
   };
 
-  // Full Teacher View restore
+  // Full Teacher View
   function renderTeacher(t) {
     const users = getUsers(), cls = getClasses();
     let html = '';
@@ -327,16 +327,12 @@ function initApp() {
       td.style.cursor='pointer';
 
       if (d < todayD) {
-        // past date
         td.style.background = prog[key] ? 'lightgreen' : 'lightcoral';
         if (!prog[key]) td.onclick = ()=>handlePast(code,key,student);
         else            td.onclick = ()=>alert("You've already completed your drill for this day!");
       } else if (d === todayD) {
-        // today
         td.style.background = prog[key] ? 'lightgreen' : 'lightblue';
-        if (!prog[key]) td.onclick = ()=>{}; // no action
       } else {
-        // future
         td.style.background = 'lightgray';
       }
       tr.appendChild(td);
@@ -371,11 +367,7 @@ function initApp() {
         s.className='char'; s.textContent=ch; promptEl.appendChild(s);
       });
       pos=0; mark(); feedbackEl.textContent=''; nextBtn.disabled=true;
-      if(idx<drills.length-1){
-        nextBtn.textContent='Next'; nextBtn.className='btn primary';
-      } else {
-        nextBtn.textContent='Submit'; nextBtn.className='btn secondary';
-      }
+      nextBtn.textContent = idx<drills.length-1 ? 'Next' : 'Submit';
       updateAcc();
     }
 
@@ -420,7 +412,6 @@ function initApp() {
       if(idx<drills.length-1){
         idx++; loadOne();
       } else {
-        // Submit → turn green/past or today
         buildCalendar(student, code);
         promptEl.textContent='Typing Drill Completed!';
         nextBtn.disabled=true;
@@ -436,7 +427,92 @@ function initApp() {
     renderDrillsWithDate(code, cls.customDrills[today]||cls.drills, today, student, false);
   }
 
-  // Admin & deleteUser unchanged…
-  function enterAdmin(){ /* … */ }
-  function deleteUser(u){ /* … */ }
-}
+  // Admin panel
+  function enterAdmin(){
+    const existing = document.getElementById('admin');
+    if(existing) existing.remove();
+
+    const panel = document.createElement('div');
+    panel.id='admin'; panel.style.padding='1em';
+    panel.innerHTML = `
+      <h2>Admin Panel</h2>
+      <button id="cleanup-students">Delete orphan students</button>
+      <button id="cleanup-teachers">Delete orphan teachers</button>
+      <table border="1" style="width:100%;margin-top:1em;">
+        <tr><th>User</th><th>Role</th><th>Info</th><th>Action</th></tr>
+        <tbody id="admin-body"></tbody>
+      </table>
+    `;
+    document.body.appendChild(panel);
+
+    const users   = getUsers();
+    const classes = getClasses();
+    const valid   = new Set(Object.keys(classes));
+    const body    = document.getElementById('admin-body');
+    body.innerHTML = '';
+
+    Object.entries(users).forEach(([u,d])=>{
+      let info = d.role==='teacher'
+        ? (d.classrooms||[]).join(', ')
+        : (d.classroomCode||'');
+      if(d.role==='student' && !valid.has(d.classroomCode)) {
+        info = `<span style="color:red">${info||'none'}</span>`;
+      }
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${u}</td><td>${d.role}</td><td>${info}</td>
+        <td><button data-user="${u}" class="del-user">Delete</button></td>
+      `;
+      body.appendChild(tr);
+    });
+
+    document.querySelectorAll('.del-user').forEach(b=>{
+      b.onclick = ()=>{
+        const u = b.dataset.user;
+        if(!confirm(`Delete ${u}?`)) return;
+        deleteUser(u);
+        enterAdmin();
+      };
+    });
+
+    document.getElementById('cleanup-students').onclick = ()=>{
+      if(!confirm('Delete orphan students?')) return;
+      const u2 = getUsers();
+      Object.entries(u2).forEach(([u,d])=>{
+        if(d.role==='student' && !valid.has(d.classroomCode)) {
+          delete u2[u];
+        }
+      });
+      saveUsers(u2);
+      enterAdmin();
+    };
+
+    document.getElementById('cleanup-teachers').onclick = ()=>{
+      if(!confirm('Delete orphan teachers?')) return;
+      const u2 = getUsers();
+      Object.entries(u2).forEach(([u,d])=>{
+        if(d.role==='teacher' && (!d.classrooms || d.classrooms.length===0)) {
+          delete u2[u];
+        }
+      });
+      saveUsers(u2);
+      enterAdmin();
+    };
+  }
+
+  function deleteUser(u){
+    const us = getUsers();
+    const cl = getClasses();
+    if(us[u].role==='teacher'){
+      us[u].classrooms.forEach(c=>delete cl[c]);
+      saveClasses(cl);
+    } else {
+      const cc = us[u].classroomCode;
+      if(cl[cc]) cl[cc].students = cl[cc].students.filter(x=>x!==u);
+      saveClasses(cl);
+    }
+    delete us[u];
+    saveUsers(us);
+  }
+
+} // end initApp

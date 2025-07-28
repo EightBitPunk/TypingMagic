@@ -1,4 +1,4 @@
-// Version 0.1.41
+// Version 0.1.42
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.41';
+  badge.textContent = 'version 0.1.42';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -188,7 +188,7 @@ function initApp() {
       const c = cls[code];
       if (!c) return;
 
-      // Class header + controls
+      // Header + controls
       html += `<h3>
         ${c.name} (Code: ${code})
         <button class="custom-btn" data-code="${code}">Customize Drills</button>
@@ -196,12 +196,12 @@ function initApp() {
         <span class="del-class"    data-code="${code}">🗑️</span>
       </h3>`;
 
-      // Bulk file input (hidden)
-      html += `<input type="file" id="bulk-file-${code}" accept=".csv,.txt" class="hidden" />`;
+      // Hidden file input
+      html += `<input type="file" id="bulk-file-${code}" accept=".txt" class="hidden" />`;
 
-      // Editor panel
+      // Editor
       html += `<div id="editor-${code}" class="card" style="display:none;">
-        <label>Date: <input type="date" id="date-${code}" /></label>
+        <label>Date: <input type="date"   id="date-${code}" /></label>
         <label style="margin-left:.5em;">
           <input type="checkbox" id="all-${code}" /> All Classes
         </label><br>
@@ -231,7 +231,7 @@ function initApp() {
     });
     progTable.innerHTML = html;
 
-    // Wire up per-class buttons
+    // Wire up buttons per class
     (users[t].classrooms || []).forEach(code => {
       const cobj   = cls[code];
       const editor = document.getElementById(`editor-${code}`);
@@ -306,7 +306,7 @@ function initApp() {
         };
       });
 
-      // **Bulk Upload** wiring
+      // Bulk Upload
       const bulkBtn   = document.querySelector(`.bulk-btn[data-code="${code}"]`);
       const fileInput = document.getElementById(`bulk-file-${code}`);
       bulkBtn.onclick = () => {
@@ -317,13 +317,27 @@ function initApp() {
         const file = evt.target.files[0];
         if (!file) return;
         const text = await file.text();
-        // Parse bracketed format: date [drill][drill]...
+        // Prompt with YES / NO / CANCEL
+        const resp = prompt(
+          "Apply these drills to ALL of your classes?\n" +
+          "Type YES to apply to all, NO to apply only to this class, or CANCEL to abort."
+        );
+        if (resp === null) { // Cancel
+          fileInput.value = ''; fileInput.classList.add('hidden');
+          return;
+        }
+        const choice = resp.trim().toUpperCase();
+        if (choice !== 'YES' && choice !== 'NO') {
+          alert('Aborted bulk upload.');
+          fileInput.value = ''; fileInput.classList.add('hidden');
+          return;
+        }
+        const applyAll = (choice === 'YES');
+        // Parse bracketed format: date[drill][drill]...
         const lines = text.split(/\r?\n/).filter(Boolean);
         const clsLocal = getClasses();
         clsLocal[code].customDrills = clsLocal[code].customDrills||{};
-        const applyAll = confirm('Apply these drills to ALL of your classes?');
         lines.forEach(line => {
-          //   e.g. 2025-08-01[Sentence, with comma][Another sentence]
           const datePart = line.split('[')[0].trim();
           const drills   = Array.from(line.matchAll(/\[([^\]]+)\]/g))
                               .map(m=>m[1].trim())
@@ -339,8 +353,7 @@ function initApp() {
           }
         });
         saveClasses(clsLocal);
-        fileInput.value = '';
-        fileInput.classList.add('hidden');
+        fileInput.value = ''; fileInput.classList.add('hidden');
         renderTeacher(t);
       };
     });
@@ -374,17 +387,21 @@ function initApp() {
     tbl.appendChild(hdr);
 
     let tr = document.createElement('tr');
-    for(let i=0;i<first;i++){
-      const td=document.createElement('td'); td.style.padding='4px'; tr.appendChild(td);
+    for (let i=0; i<first; i++){
+      const td = document.createElement('td');
+      td.style.padding='4px';
+      tr.appendChild(td);
     }
-    for(let d=1; d<=days; d++){
-      if((first+d-1)%7===0 && d!==1){
-        tbl.appendChild(tr); tr=document.createElement('tr');
+    for (let d=1; d<=days; d++){
+      if ((first+d-1)%7===0 && d!==1) {
+        tbl.appendChild(tr);
+        tr = document.createElement('tr');
       }
-      const td=document.createElement('td');
-      td.textContent=d;
-      td.style.width='24px'; td.style.height='24px'; td.style.textAlign='center';
-      const key=`${year}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const td = document.createElement('td');
+      td.textContent = d;
+      td.style.width='24px'; td.style.height='24px';
+      td.style.textAlign='center';
+      const key = `${year}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       td.style.cursor='pointer';
 
       if (d < todayD) {

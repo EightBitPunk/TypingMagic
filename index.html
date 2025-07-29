@@ -37,8 +37,6 @@
     <!-- Teacher Dashboard -->
     <section id="teacher-dashboard" class="hidden">
       <h2>Welcome, <span id="teacher-name"></span> (Teacher)</h2>
-
-      <!-- Create Classroom -->
       <div id="classroom-setup" class="card">
         <label>New Classroom Name:
           <input type="text" id="new-classroom-name" />
@@ -47,11 +45,10 @@
         <div id="classroom-code-display" class="info"></div>
       </div>
 
-      <!-- Classes & Progress -->
       <div id="teacher-classroom-view" class="card hidden">
         <h3>Classes &amp; Student Progress</h3>
 
-        <!-- Bulk sample template -->
+        <!-- Download sample template for bulk upload -->
         <a href="BulkFormatExample.txt" download class="btn secondary" style="margin-bottom:1em;">
           📄 Download Sample Template
         </a>
@@ -59,7 +56,7 @@
         <div id="student-progress-table"></div>
       </div>
 
-      <!-- Link to tutorials -->
+      <!-- New link to Tutorials page -->
       <div style="margin-top:2rem; text-align:center;">
         <a href="teacher_tutorials.html" class="btn primary">
           HOW TO USE THE TEACHER PORTAL
@@ -70,28 +67,17 @@
     <!-- Student Dashboard -->
     <section id="student-dashboard" class="hidden">
       <h2>Welcome, <span id="student-name"></span> (Student)</h2>
-
       <div id="drill-container" class="card">
         <p id="prompt" tabindex="0"></p>
-
-        <!-- feedback + accuracy side by side -->
-        <div class="feedback-row" style="display:flex; justify-content:space-between; align-items:center;">
-          <div id="feedback"></div>
-          <div id="student-stats" class="info"></div>
-        </div>
-
+        <div id="feedback"></div>
         <button id="next-btn" class="btn primary" disabled>Next</button>
       </div>
-
       <div id="calendar" class="card"></div>
+      <div id="student-stats" class="info"></div>
     </section>
   </main>
 
-  <!-- Yellow logout button -->
-  <button id="logout-btn" class="btn secondary" style="display:none; background: #f2c94c; color: #333;">
-    Log Out
-  </button>
-
+  <button id="logout-btn" class="btn secondary" style="display:none;">Log Out</button>
   <script src="app.js"></script>
 </body>
 </html>

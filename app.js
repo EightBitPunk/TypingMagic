@@ -192,35 +192,31 @@ function initApp() {
     const users = getUsers(), classes = getClasses();
     let html = '';
     (users[t].classrooms || []).forEach(code => {
-      const c = classes[code];
-      if (!c) return;
-
-      html += `<h3>${c.name} (Code: ${code}) \`
-             + `<button class="custom-btn" data-code="${code}">Customize Drills</button>\`
-             + `<button class="bulk-btn" data-code="${code}">Bulk Upload</button>\`
-             + `<span class="del-class" data-code="${code}">🗑️</span></h3>`;
-
+      const c = classes[code]; if (!c) return;
+      html += `<h3>${c.name} (Code: ${code})` +
+              ` <button class="custom-btn" data-code="${code}">Customize Drills</button>` +
+              ` <button class="bulk-btn" data-code="${code}">Bulk Upload</button>` +
+              ` <span class="del-class" data-code="${code}">🗑️</span></h3>`;
       html += `<input type="file" id="bulk-file-${code}" accept=".txt" class="hidden" />`;
       html += `<div id="editor-${code}" class="card" style="display:none;">
-        <label>Date: <input type="date" id="date-${code}" /></label>
-        <label style="margin-left:.5em;"><input type="checkbox" id="all-${code}" /> All Classes</label><br>
-        <textarea id="ta-${code}" rows="4" style="width:100%"></textarea><br>
-        <button id="save-${code}" class="btn primary">Save</button>
-        <button id="cancel-${code}" class="btn secondary">Cancel</button>
-      </div>`;
-
+                <label>Date: <input type="date" id="date-${code}" /></label>
+                <label style="margin-left:.5em;"><input type="checkbox" id="all-${code}" /> All Classes</label><br>
+                <textarea id="ta-${code}" rows="4" style="width:100%"></textarea><br>
+                <button id="save-${code}" class="btn primary">Save</button>
+                <button id="cancel-${code}" class="btn secondary">Cancel</button>
+              </div>`;
       html += `<table><tr><th>Student</th><th>Date</th><th>Acc</th><th>Err</th></tr>`;
       c.students.forEach(s => {
         const pr = getUsers()[s].progress || {};
         Object.entries(pr).forEach(([d,arr]) => {
-          const avg = arr.length? Math.round(arr.reduce((sum,x)=>sum+x.accuracy,0)/arr.length):0;
+          const avg = arr.length ? Math.round(arr.reduce((sum,x)=>sum+x.accuracy,0)/arr.length) : 0;
           const err = arr.reduce((sum,x)=>sum+x.errors,0);
-          const late= arr.some(r=>r.late);
+          const late = arr.some(r=>r.late);
           html += `<tr class="${late?'late-row':''}">
-            <td>${s} <span class="del-student" data-code="${code}" data-student="${s}">🗑️</span></td>
-            <td>${d} <span class="del-date" data-code="${code}" data-date="${d}">🗑️</span></td>
-            <td>${avg}%</td><td>${err}</td>
-          </tr>`;
+                    <td>${s} <span class="del-student" data-code="${code}" data-student="${s}">🗑️</span></td>
+                    <td>${d} <span class="del-date" data-code="${code}" data-date="${d}">🗑️</span></td>
+                    <td>${avg}%</td><td>${err}</td>
+                   </tr>`;
         });
       });
       html += `</table>`;
@@ -239,4 +235,67 @@ function initApp() {
         ta.value = (classes[code].customDrills[di.value]||classes[code].drills).join('\n');
         allCk.checked = false;
         editor.style.display='block';
-      };\
+      };
+      di.onchange = () => { ta.value = (classes[code].customDrills[di.value]||[]).join('\n'); };
+      document.getElementById(`cancel-${code}`).onclick = () => { editor.style.display='none'; };
+      document.getElementById(`save-${code}`).onclick = () => {
+        const d = di.value;
+        const lines = ta.value.split('\n').map(l=>l.trim()).filter(Boolean);
+        const clsLocal = getClasses();
+        clsLocal[code].customDrills = clsLocal[code].customDrills||{};
+        clsLocal[code].customDrills[d] = lines;
+        saveClasses(clsLocal);
+        renderTeacher(t);
+      };
+
+      document.querySelector(`.del-class[data-code="${code}"]`).onclick = () => {
+        if (!confirm('Delete entire class?')) return;
+        const clsLocal = getClasses(); delete clsLocal[code]; saveClasses(clsLocal);
+        const us = getUsers(); us[t].classrooms = us[t].classrooms.filter(c=>c!==code); saveUsers(us);
+        renderTeacher(t);
+      };
+
+      document.querySelectorAll(`.del-student[data-code="#${code}"]`).forEach(btn => {
+        btn.onclick = () => {
+          if (!confirm(`Remove student ${btn.dataset.student}?`)) return;
+          const clsLocal = getClasses();
+          clsLocal[code].students = clsLocal[code].students.filter(x=>x!==btn.dataset.student);
+          saveClasses(clsLocal);
+          renderTeacher(t);
+        };
+      });
+
+      document.querySelectorAll(`.del-date[data-code="#${code}"]`).forEach(btn => {
+        btn.onclick = () => {
+          if (!confirm(`Remove all completions on ${btn.dataset.date}?`)) return;
+          const us = getUsers(), clsLocal = getClasses();
+          clsLocal[code].students.forEach(s => { delete us[s].progress[btn.dataset.date]; });
+          saveUsers(us);
+          renderTeacher(t);
+        };
+      });
+
+      const bulkBtn = document.querySelector(`.bulk-btn[data-code="${code}"]`);
+      const fileIn  = document.getElementById(`bulk-file-${code}`);
+      bulkBtn.onclick = () => { fileIn.click(); };
+      fileIn.onchange = async (e) => {
+        const text = await e.target.files[0].text();
+        const resp = prompt("Apply to all? YES/NO");
+        if (!resp) return;
+        const applyAll = resp.trim().toUpperCase()==='YES';
+        const lines = text.split(/\r?\n/).filter(Boolean);
+        const clsL = getClasses();
+        lines.forEach(line => {
+          const date = line.split('[')[0].trim();
+          const drills = [...line.matchAll(/\[([^\]]+)\]/g)].map(m => m[1]);
+          if (applyAll) classes[t].classrooms.forEach(cid => { clsL[cid].customDrills[date] = drills; });
+          else clsL[code].customDrills[date] = drills;
+        });
+        saveClasses(clsL);
+        renderTeacher(t);
+      };
+    });
+  }
+
+  // Student view and admin panel remain as in v0.1.42
+}

@@ -1,187 +1,234 @@
-// Version 0.1.43
+// TeachType App Logic v0.1.44
 
-window.addEventListener("DOMContentLoaded", () => {
-  showVersion();
-  initApp();
+const version = "0.1.44";
+document.getElementById("login-message").textContent = `Version ${version}`;
+
+let currentUser = null;
+let currentPromptIndex = 0;
+let currentDrills = [];
+let currentDate = new Date().toISOString().split("T")[0];
+
+// UI Sections
+const loginScreen = document.getElementById("login-screen");
+const teacherDashboard = document.getElementById("teacher-dashboard");
+const studentDashboard = document.getElementById("student-dashboard");
+const adminDashboard = document.getElementById("admin-dashboard");
+
+// Event Listeners
+document.getElementById("role").addEventListener("change", () => {
+  document.getElementById("student-classroom-code").classList.toggle("hidden",
+    document.getElementById("role").value !== "student");
 });
 
-function showVersion() {
-  document.querySelectorAll('.version-badge').forEach(el => el.remove());
-  const badge = document.createElement('div');
-  badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.43';
-  Object.assign(badge.style, {
-    position: 'fixed', bottom: '5px', right: '10px',
-    fontSize: '0.8em', color: 'gray',
-    background: 'rgba(255,255,255,0.8)', padding: '2px 5px',
-    borderRadius: '3px', pointerEvents: 'none'
-  });
-  document.body.appendChild(badge);
+document.getElementById("login-btn").addEventListener("click", loginUser);
+document.getElementById("toggle-mode-btn").addEventListener("click", toggleMode);
+document.getElementById("create-classroom-btn").addEventListener("click", createClassroom);
+document.getElementById("logout-btn").addEventListener("click", logoutUser);
+document.getElementById("next-btn").addEventListener("click", nextPrompt);
+document.getElementById("bulk-upload-btn")?.addEventListener("click", () => {
+  document.getElementById("bulk-upload-file").click();
+});
+document.getElementById("bulk-upload-file")?.addEventListener("change", handleBulkUpload);
+
+// Core Login Logic
+function loginUser() {
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const role = document.getElementById("role").value;
+  const classroomCode = document.getElementById("classroom-code").value.trim();
+
+  if (!username || !password || (role === "student" && !classroomCode)) {
+    showError("Please fill in all required fields.");
+    return;
+  }
+
+  currentUser = { username, role, classroomCode };
+  loginScreen.classList.add("hidden");
+  document.getElementById("logout-btn").style.display = "block";
+
+  if (role === "teacher") {
+    showTeacherDashboard();
+  } else if (role === "student") {
+    showStudentDashboard();
+  } else if (role === "admin") {
+    alert("Welcome, Admin!");
+  }
 }
 
-function initApp() {
-  const defaultDrills = [
-    'The quick brown fox jumps over the lazy dog.',
-    'Typing practice improves both speed and accuracy.',
-    'Accuracy over speed.'
-  ];
+function toggleMode() {
+  const btn = document.getElementById("toggle-mode-btn");
+  btn.textContent = btn.textContent === "Sign Up" ? "Back to Login" : "Sign Up";
+}
 
-  // Restore last username
-  const lastUser = localStorage.getItem('lastUser');
-  if (lastUser) document.getElementById('username').value = lastUser;
+function logoutUser() {
+  currentUser = null;
+  loginScreen.classList.remove("hidden");
+  studentDashboard.classList.add("hidden");
+  teacherDashboard.classList.add("hidden");
+  document.getElementById("logout-btn").style.display = "none";
+  location.reload();
+}
 
-  // Storage helpers
-  const getUsers    = () => JSON.parse(localStorage.getItem('users')    || '{}');
-  const saveUsers   = u  => localStorage.setItem('users', JSON.stringify(u));
-  const getClasses  = () => JSON.parse(localStorage.getItem('classrooms')|| '{}');
-  const saveClasses = c  => localStorage.setItem('classrooms', JSON.stringify(c));
+// Error Display
+function showError(message) {
+  document.getElementById("login-message").textContent = message;
+}
 
-  // Logout button
-  const logoutBtn = document.getElementById('logout-btn');
-  logoutBtn.style.display = 'none';
-  logoutBtn.onclick = () => {
-    localStorage.removeItem('currentUser');
-    location.reload();
+// Teacher Dashboard
+function showTeacherDashboard() {
+  teacherDashboard.classList.remove("hidden");
+  document.getElementById("teacher-name").textContent = currentUser.username;
+  loadTeacherClasses();
+}
+
+function createClassroom() {
+  const name = document.getElementById("new-classroom-name").value.trim();
+  if (!name) return;
+  const code = Math.random().toString(36).substr(2, 6).toUpperCase();
+  localStorage.setItem(`class-${code}`, JSON.stringify({ name, teacher: currentUser.username }));
+  loadTeacherClasses();
+}
+
+function loadTeacherClasses() {
+  const container = document.getElementById("student-progress-table");
+  container.innerHTML = "";
+  const classes = Object.entries(localStorage)
+    .filter(([k]) => k.startsWith("class-"))
+    .map(([code, data]) => [code.replace("class-", ""), JSON.parse(data)])
+    .filter(([, data]) => data.teacher === currentUser.username);
+
+  if (classes.length === 0) return;
+
+  document.getElementById("teacher-classroom-view").classList.remove("hidden");
+
+  classes.forEach(([code, data]) => {
+    const div = document.createElement("div");
+    div.innerHTML = `<h4>${data.name} (${code})</h4>`;
+    const students = Object.entries(localStorage)
+      .filter(([k]) => k.startsWith("user-"))
+      .map(([k, v]) => JSON.parse(v))
+      .filter(u => u.role === "student" && u.classroomCode === code);
+
+    students.forEach(student => {
+      div.innerHTML += `<div>${student.username}</div>`;
+    });
+
+    container.appendChild(div);
+  });
+}
+
+// Student Dashboard
+function showStudentDashboard() {
+  studentDashboard.classList.remove("hidden");
+  document.getElementById("student-name").textContent = currentUser.username;
+  loadDrillsForStudent(currentDate);
+  renderCalendar();
+}
+
+function loadDrillsForStudent(date) {
+  const key = `drills-${currentUser.classroomCode}-${date}`;
+  const stored = localStorage.getItem(key);
+  if (!stored) {
+    document.getElementById("prompt").textContent = "No drill for today.";
+    return;
+  }
+
+  currentDrills = JSON.parse(stored);
+  currentPromptIndex = 0;
+  showPrompt(currentDrills[currentPromptIndex]);
+  document.getElementById("next-btn").disabled = false;
+}
+
+function showPrompt(prompt) {
+  const promptEl = document.getElementById("prompt");
+  const feedbackEl = document.getElementById("feedback");
+  promptEl.textContent = prompt;
+  feedbackEl.innerHTML = `
+    <input id="typing-input" type="text" />
+    <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+      <span id="error-count">Errors: 0</span>
+      <span id="accuracy">Accuracy: 100%</span>
+    </div>
+  `;
+  document.getElementById("typing-input").addEventListener("input", checkTyping);
+}
+
+function checkTyping() {
+  const prompt = currentDrills[currentPromptIndex];
+  const typed = document.getElementById("typing-input").value;
+  const errors = typed.split("").filter((c, i) => c !== prompt[i]).length;
+  const acc = Math.max(0, Math.floor(((prompt.length - errors) / prompt.length) * 100));
+  document.getElementById("error-count").textContent = `Errors: ${errors}`;
+  document.getElementById("accuracy").textContent = `Accuracy: ${acc}%`;
+}
+
+function nextPrompt() {
+  currentPromptIndex++;
+  if (currentPromptIndex < currentDrills.length) {
+    showPrompt(currentDrills[currentPromptIndex]);
+  } else {
+    document.getElementById("prompt").textContent = "Typing Drill Completed!";
+    document.getElementById("next-btn").disabled = true;
+    markDateCompleted(currentDate);
+  }
+}
+
+function markDateCompleted(date) {
+  const completedKey = `completed-${currentUser.username}-${date}`;
+  localStorage.setItem(completedKey, "true");
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const container = document.getElementById("calendar");
+  container.innerHTML = "<h3>Typing Calendar</h3>";
+  const today = new Date();
+  const days = 14;
+
+  for (let i = 0; i < days; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    const iso = date.toISOString().split("T")[0];
+    const completed = localStorage.getItem(`completed-${currentUser.username}-${iso}`);
+    const hasDrill = localStorage.getItem(`drills-${currentUser.classroomCode}-${iso}`);
+    const div = document.createElement("div");
+    div.textContent = iso;
+    div.className = "calendar-day";
+    if (completed) div.classList.add("green");
+    else if (hasDrill) div.classList.add("blue");
+    else div.classList.add("gray");
+    container.appendChild(div);
+  }
+}
+
+// Bulk Upload
+function handleBulkUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const lines = e.target.result.split("\n").map(line => line.trim()).filter(Boolean);
+    const data = lines.map(line => {
+      const [date, ...drills] = line.split(/\[(.*?)\]/).filter((_, i) => i % 2 === 1 || i === 0);
+      return { date: date.trim(), drills: drills.filter(Boolean) };
+    });
+
+    const applyToAll = confirm("Apply to ALL of your classes?\nYes = all\nNo = just this class");
+    const classKeys = Object.entries(localStorage)
+      .filter(([k]) => k.startsWith("class-"))
+      .filter(([, v]) => JSON.parse(v).teacher === currentUser.username)
+      .map(([k]) => k.replace("class-", ""));
+
+    data.forEach(({ date, drills }) => {
+      classKeys.forEach(code => {
+        if (applyToAll || code === currentUser.classroomCode) {
+          localStorage.setItem(`drills-${code}-${date}`, JSON.stringify(drills));
+        }
+      });
+    });
+
+    alert("Bulk upload completed.");
+    loadTeacherClasses();
   };
-
-  // DOM refs
-  const loginScreen = document.getElementById('login-screen');
-  const loginBtn    = document.getElementById('login-btn');
-  let   toggleBtn   = document.getElementById('toggle-mode-btn');
-  if (!toggleBtn) {
-    toggleBtn = document.createElement('button');
-    toggleBtn.id = 'toggle-mode-btn';
-    loginScreen.appendChild(toggleBtn);
-  }
-  const userIn      = document.getElementById('username');
-  const passIn      = document.getElementById('password');
-  const roleSel     = document.getElementById('role');
-  const loginMsg    = document.getElementById('login-message');
-  const classIn     = document.getElementById('classroom-code');
-  const studentWrap = document.getElementById('student-classroom-code');
-
-  const teacherDash = document.getElementById('teacher-dashboard');
-  const classSetup  = document.getElementById('classroom-setup');
-  const teacherView = document.getElementById('teacher-classroom-view');
-  const createBtn   = document.getElementById('create-classroom-btn');
-  const newClassIn  = document.getElementById('new-classroom-name');
-  const codeDisp    = document.getElementById('classroom-code-display');
-  const teacherName = document.getElementById('teacher-name');
-  const progTable   = document.getElementById('student-progress-table');
-
-  const studentDash = document.getElementById('student-dashboard');
-  const studentName = document.getElementById('student-name');
-  const promptEl    = document.getElementById('prompt');
-  const feedbackEl  = document.getElementById('feedback');
-  const nextBtn     = document.getElementById('next-btn');
-  const statsDiv    = document.getElementById('student-stats');
-
-  // Toggle Sign‑Up / Log‑In
-  let isSignUp = false;
-  function updateMode() {
-    loginBtn.textContent = isSignUp ? 'Sign Up' : 'Log In';
-    toggleBtn.textContent = isSignUp ? 'Go to Log In' : 'Go to Sign Up';
-    studentWrap.classList.toggle('hidden', !(isSignUp && roleSel.value === 'student'));
-  }
-  toggleBtn.onclick = () => { isSignUp = !isSignUp; updateMode(); };
-  roleSel.onchange  = updateMode;
-  updateMode();
-
-  // Auto‑login
-  const session = JSON.parse(localStorage.getItem('currentUser') || 'null');
-  if (session && session.username && session.role !== 'admin') {
-    const users = getUsers();
-    if (users[session.username] && users[session.username].role === session.role) {
-      enterDash(session.username, session.role);
-      return;
-    }
-    localStorage.removeItem('currentUser');
-  }
-
-  // Login / Sign‑Up
-  loginBtn.onclick = () => {
-    loginMsg.textContent = '';
-    const u    = userIn.value.trim();
-    const p    = passIn.value;
-    const role = roleSel.value;
-    const code = classIn.value.trim();
-
-    // Admin shortcut
-    if (u === 'KEFKA' && p === 'SUCKS') {
-      enterAdmin();
-      return;
-    }
-    if (!u || !p || (isSignUp && role === 'student' && !code)) {
-      loginMsg.textContent = 'Complete all fields.';
-      return;
-    }
-
-    const users = getUsers();
-    if (isSignUp) {
-      if (users[u]) { loginMsg.textContent = 'User exists.'; return; }
-      users[u] = {
-        password: p,
-        role,
-        progress: {},
-        classrooms: role==='teacher'?[]:undefined,
-        classroomCode: role==='student'?code:undefined
-      };
-      if (role==='student') {
-        const cls = getClasses();
-        cls[code].students.push(u);
-        saveClasses(cls);
-      }
-      saveUsers(users);
-      localStorage.setItem('lastUser', u);
-      localStorage.setItem('currentUser', JSON.stringify({username:u,role}));
-      enterDash(u, role);
-    } else {
-      if (users[u] && users[u].password===p && users[u].role===role) {
-        localStorage.setItem('lastUser', u);
-        localStorage.setItem('currentUser', JSON.stringify({username:u,role}));
-        enterDash(u, role);
-      } else {
-        loginMsg.textContent = 'Incorrect credentials.';
-      }
-    }
-  };
-
-  function enterDash(u, role) {
-    logoutBtn.style.display = 'block';
-    loginScreen.classList.add('hidden');
-    if (role === 'teacher') {
-      teacherName.textContent = u;
-      teacherDash.classList.remove('hidden');
-      classSetup.classList.remove('hidden');
-      teacherView.classList.remove('hidden');
-      renderTeacher(u);
-    } else {
-      studentName.textContent = u;
-      studentDash.classList.remove('hidden');
-      renderStudent(getUsers()[u].classroomCode, u);
-    }
-  }
-
-  // Create Classroom (restored!)
-  createBtn.onclick = () => {
-    const name = newClassIn.value.trim();
-    if (!name) return;
-    const newCode = 'C' + Math.floor(100000 + Math.random() * 900000);
-    const cls = getClasses();
-    cls[newCode] = {
-      name, teacher: teacherName.textContent,
-      students: [], drills: defaultDrills.slice(),
-      customDrills: {}
-    };
-    saveClasses(cls);
-    const us = getUsers();
-    us[teacherName.textContent].classrooms.push(newCode);
-    saveUsers(us);
-    codeDisp.textContent = `New Code: ${newCode}`;
-    renderTeacher(teacherName.textContent);
-  };
-
-  // ...rest of renderTeacher, renderStudent, calendar, drills, admin, deleteUser unchanged...
-  // (Due to length, assume these are identical to v0.1.42)
-
-} // end initApp
+  reader.readAsText(file);
+}

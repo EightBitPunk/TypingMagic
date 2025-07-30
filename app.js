@@ -36,6 +36,61 @@ function initApp() {
   const getClasses  = () => JSON.parse(localStorage.getItem('classrooms')|| '{}');
   const saveClasses = c  => localStorage.setItem('classrooms', JSON.stringify(c));
 
+// Opens the per‑class drill editor
+function openEditor(t, code) {
+  const cls = getClasses()[code];
+  const di  = document.getElementById(`date-${code}`);
+  const ta  = document.getElementById(`ta-${code}`);
+  const editor = document.getElementById(`editor-${code}`);
+  if (!di.value) di.value = new Date().toISOString().split('T')[0];
+  ta.value = (cls.customDrills[di.value] || cls.drills).join('\n');
+  document.getElementById(`all-${code}`).checked = false;
+  editor.style.display = 'block';
+}
+
+// Triggers the hidden file input for bulk upload
+function openBulk(t, code) {
+  const input = document.getElementById(`bulk-file-${code}`);
+  input.classList.remove('hidden');
+  input.click();
+}
+
+// Handles the bulk‑upload file once selected
+async function handleBulkUpload(evt, code) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const text = await file.text();
+  const resp = prompt(
+    "Apply these drills to ALL of your classes?\n" +
+    "Type YES to apply to all, NO to apply only to this class, or CANCEL to abort."
+  );
+  if (resp === null) { evt.target.value=''; evt.target.classList.add('hidden'); return; }
+  const choice = resp.trim().toUpperCase();
+  if (choice !== 'YES' && choice !== 'NO') {
+    alert('Aborted bulk upload.');
+    evt.target.value=''; evt.target.classList.add('hidden');
+    return;
+  }
+  const applyAll = (choice==='YES');
+  const clsData = getClasses();
+  text.split(/\r?\n/).filter(Boolean).forEach(line => {
+    const datePart = line.split('[')[0].trim();
+    const drills   = Array.from(line.matchAll(/\[([^\]]+)\]/g))
+                      .map(m=>m[1].trim()).filter(Boolean);
+    if (!datePart || !drills.length) return;
+    if (applyAll) {
+      getUsers()[t].classrooms.forEach(cid => {
+        clsData[cid].customDrills[datePart] = drills;
+      });
+    } else {
+      clsData[code].customDrills[datePart] = drills;
+    }
+  });
+  saveClasses(clsData);
+  evt.target.value=''; evt.target.classList.add('hidden');
+  renderTeacher(t);
+}
+  
   // Logout button
   const logoutBtn = document.getElementById('logout-btn');
   logoutBtn.style.display = 'none';
@@ -258,8 +313,9 @@ html += `</div></div>`;
       renderTeacher(t);
     };
     // Customize, Bulk, Delete class keep your existing handlers:
-    document.querySelector(`.custom-btn[data-code="${code}"]`).onclick = () => {/* your openEditor */}
-    document.querySelector(`.bulk-btn[data-code="${code}"]`).onclick   = () => {/* your openBulk */}
+    document.querySelector(`.custom-btn[data-code="${code}"]`).onclick = () => openEditor(t, code);
+    document.querySelector(`.bulk-btn[data-code="${code}"]`).onclick   = () => openBulk(t, code);
+    document.getElementById(`bulk-file-${code}`).onchange = e => handleBulkUpload(e, code);
     document.querySelector(`.delete-class[data-code="${code}"]`).onclick = () => {/* your deleteClass */}
   });
 }

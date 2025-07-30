@@ -63,6 +63,8 @@ function initApp() {
   const teacherDash = document.getElementById('teacher-dashboard');
   const classSetup  = document.getElementById('classroom-setup');
   const teacherView = document.getElementById('teacher-classroom-view');
+  const dup = document.querySelector('#teacher-classroom-view a[href$="BulkFormatExample.txt"]');
+  if (dup) dup.remove();
   const createBtn   = document.getElementById('create-classroom-btn');
   const newClassIn  = document.getElementById('new-classroom-name');
   const codeDisp    = document.getElementById('classroom-code-display');

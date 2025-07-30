@@ -201,8 +201,14 @@ function renderTeacher(t) {
     html += `<div>`;
     html += `<button class="custom-btn" data-code="${code}">Customize Drills</button> `;
     html += `<button class="bulk-btn"   data-code="${code}">Bulk Upload</button> `;
-    html += `<button class="btn danger delete-class" data-code="${code}">DELETE CLASS</button>`;
-    html += `</div></div>`;
+html += `<button 
+             class="btn danger delete-class" 
+             data-code="${code}"
+             style="background:red;color:white;border:none;"
+           >
+             DELETE CLASS
+         </button>`;
+html += `</div></div>`;
 
     // Table
     html += `<table style="width:100%;border-collapse:collapse;">
@@ -406,6 +412,9 @@ function renderTeacher(t) {
 
   // Admin panel
   function enterAdmin(){
+// Show the Log Out button in Admin panel
+  document.getElementById('logout-btn').style.display = 'block';
+
     const existing = document.getElementById('admin');
     if(existing) existing.remove();
 

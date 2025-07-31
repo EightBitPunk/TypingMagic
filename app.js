@@ -1,4 +1,4 @@
-// Version 0.1.50
+// Version 0.1.51
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.50';
+  badge.textContent = 'version 0.1.51';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -278,18 +278,17 @@ function renderTeacher(t) {
               DELETE CHECKED ASSIGNMENTS
             </button>
           </div>
-          <div>
-            <button class="custom-btn" data-code="${code}">
-              Customize Drills
-            </button>
-            <button class="bulk-btn" data-code="${code}">
-              Bulk Upload
-            </button>
-            <button class="btn danger delete-class" data-code="${code}"
-                    style="background:red;color:white;border:none;">
-              DELETE CLASS
-            </button>
-          </div>
+<div>
+  <button class="custom-btn" data-code="${code}">
+    Customize Drills
+  </button>
+  <button class="bulk-btn" data-code="${code}">
+    Bulk Upload
+  </button>
+  <button class="btn primary edit-class" data-code="${code}">
+    EDIT CLASS
+  </button>
+</div>
         </div>
         <input type="file" id="bulk-file-${code}" accept=".txt" class="hidden" />
 <div id="editor-${code}" class="card" style="display:none;margin-bottom:1em;">
@@ -380,6 +379,31 @@ function renderTeacher(t) {
           delete usersData[s].progress[d];
         }
       });
+// ─── EDIT CLASS handler ───
+document.querySelector(`.edit-class[data-code="${code}"]`).onclick = () => {
+  // Prompt for which student to remove:
+  const cls = clsData[code];
+  const student = prompt(
+    `DELETE STUDENT:\n\n` +
+    cls.students.join('\n') +
+    `\n\nEnter the EXACT name to remove, or CANCEL to exit:`
+  );
+  if (!student) return;  // cancelled
+
+  if (!cls.students.includes(student)) {
+    return alert("No such student in this class.");
+  }
+  if (!confirm(`DELETE ${student} and remove from class?`)) return;
+
+  // Remove student record:
+  clsData[code].students = clsData[code].students.filter(s => s !== student);
+  const users = getUsers();
+  delete users[student];
+  saveUsers(users);
+  saveClasses(clsData);
+  renderTeacher(t);
+};
+
       saveUsers(usersData);
       renderTeacher(t);
     };

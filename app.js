@@ -1,4 +1,4 @@
-// Version 0.1.48
+// Version 0.1.49
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.48';
+  badge.textContent = 'version 0.1.49';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -20,17 +20,6 @@ function showVersion() {
 }
 
 function initApp() {
-// -- Restore helper functions used by renderTeacher --
-
-function openEditor(t, code) {
-  localStorage.setItem("tt-temp-edit", JSON.stringify(t.drills[code] || []));
-  location.href = `custom_drills.html?code=${code}`;
-}
-
-function openBulk(t, code) {
-  const input = document.getElementById(`bulk-file-${code}`);
-  if (input) input.click();
-}
 
 async function handleBulkUpload(evt, code) {
   const file = evt.target.files?.[0];
@@ -302,6 +291,7 @@ function renderTeacher(t) {
             </button>
           </div>
         </div>
+        <input type="file" id="bulk-file-${code}" accept=".txt" class="hidden" />
         <table style="width:100%;border-collapse:collapse;">
           <tr>
             <th></th>

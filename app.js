@@ -292,6 +292,21 @@ function renderTeacher(t) {
           </div>
         </div>
         <input type="file" id="bulk-file-${code}" accept=".txt" class="hidden" />
+<div id="editor-${code}" class="card" style="display:none;margin-bottom:1em;">
+  <label>
+    Date:
+    <input type="date" id="date-${code}" />
+  </label>
+  <label style="margin-left:.5em;">
+    <input type="checkbox" id="all-${code}" /> All Classes
+  </label>
+  <br/>
+  <textarea id="ta-${code}" rows="4" style="width:100%;margin-top:.5em;"></textarea>
+  <br/>
+  <button id="save-${code}" class="btn primary" style="margin-right:.5em;">Save</button>
+  <button id="cancel-${code}" class="btn secondary">Cancel</button>
+</div>
+
         <table style="width:100%;border-collapse:collapse;">
           <tr>
             <th></th>

@@ -1,4 +1,4 @@
-// Version 0.1.51
+// Version 0.1.52
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.51';
+  badge.textContent = 'version 0.1.52';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -307,13 +307,15 @@ function renderTeacher(t) {
 </div>
 
         <table style="width:100%;border-collapse:collapse;">
-          <tr>
-            <th></th>
-            <th>Student</th>
-            <th>Assignment Date</th>
-            <th>Completed on Same Date?</th>
-            <th>Accuracy</th>
-          </tr>`;
+    <tr>
+      <th><input type="checkbox" id="select-all-${code}" /></th>
+      <th>Student</th>
+      <th>Assignment Date</th>
+      <th>Completed on Same Date?</th>
+      <th>Accuracy</th>
+    </tr>
+    …
+`;
 
     (c.students || []).forEach(s => {
       const prog = usersData[s].progress || {};
@@ -379,6 +381,16 @@ function renderTeacher(t) {
           delete usersData[s].progress[d];
         }
       });
+
+// ─── Select-All checkbox handler ───
+document.getElementById(`select-all-${code}`).onchange = e => {
+  const checked = e.target.checked;
+  document.querySelectorAll(`.del-assignment`).forEach(cb => {
+    cb.checked = checked;
+  });
+};
+
+
 // ─── EDIT CLASS handler ───
 document.querySelector(`.edit-class[data-code="${code}"]`).onclick = () => {
   // Prompt for which student to remove:
@@ -407,7 +419,9 @@ document.querySelector(`.edit-class[data-code="${code}"]`).onclick = () => {
       saveUsers(usersData);
       renderTeacher(t);
     };
+
     // ─── copy START ───
+
 // Cancel button: hide the editor
 document.getElementById(`cancel-${code}`).onclick = () => {
   document.getElementById(`editor-${code}`).style.display = 'none';

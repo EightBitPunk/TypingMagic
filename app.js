@@ -1,4 +1,4 @@
-// Version 0.1.49
+// Version 0.1.50
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.49';
+  badge.textContent = 'version 0.1.50';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -383,9 +383,41 @@ function renderTeacher(t) {
       saveUsers(usersData);
       renderTeacher(t);
     };
+    // ─── copy START ───
+// Cancel button: hide the editor
+document.getElementById(`cancel-${code}`).onclick = () => {
+  document.getElementById(`editor-${code}`).style.display = 'none';
+};
+
+// Save button: write into customDrills and rerender
+document.getElementById(`save-${code}`).onclick = () => {
+  const d     = document.getElementById(`date-${code}`).value;
+  const lines = document.getElementById(`ta-${code}`)
+                  .value.split('\n')
+                  .map(l=>l.trim()).filter(Boolean);
+  const all   = document.getElementById(`all-${code}`).checked;
+  const cls   = getClasses();
+
+  if (all) {
+    getUsers()[t].classrooms.forEach(cid => {
+      cls[cid].customDrills = cls[cid].customDrills || {};
+      cls[cid].customDrills[d] = lines;
+    });
+  } else {
+    cls[code].customDrills = cls[code].customDrills || {};
+    cls[code].customDrills[d] = lines;
+  }
+  saveClasses(cls);
+  renderTeacher(t);
+};
+// ─── copy END ───
+
   });
 }
-// ─── end renderTeacher ───
+
+
+  
+  // ─── end renderTeacher ───
 
   // Student view
   function renderStudent(code, student) {

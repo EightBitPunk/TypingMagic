@@ -1,4 +1,4 @@
-// Version 0.1.54
+// Version 0.1.55
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.54';
+  badge.textContent = 'version 0.1.55';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -20,21 +20,6 @@ function showVersion() {
 }
 
 function initApp() {
-
-async function handleBulkUpload(evt, code) {
-  const file = evt.target.files?.[0];
-  if (!file) return;
-  const text = await file.text();
-  const rows = text.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
-  const drills = rows.map(line => {
-    const [prompt, expected] = line.split("\t");
-    return { prompt, expected };
-  }).filter(x => x.prompt && x.expected);
-  const t = getCurrentUser();
-  t.drills[code] = drills;
-  saveUsers();
-  renderTeacher(t); // refresh UI
-}
 
   const defaultDrills = [
     'The quick brown fox jumps over the lazy dog.',
@@ -364,6 +349,36 @@ function renderTeacher(t) {
         usersData[s].progress[d] =
           (usersData[s].progress[d]||[]).filter(r=>r.date!==d);
         if (!usersData[s].progress[d].length) delete usersData[s].progress[d];
+
+    // ─── copy START ───
+
+// Cancel button: hide the editor
+document.getElementById(`cancel-${code}`).onclick = () => {
+  document.getElementById(`editor-${code}`).style.display = 'none';
+};
+
+// Save button: write into customDrills and rerender
+document.getElementById(`save-${code}`).onclick = () => {
+  const d     = document.getElementById(`date-${code}`).value;
+  const lines = document.getElementById(`ta-${code}`)
+                  .value.split('\n')
+                  .map(l=>l.trim()).filter(Boolean);
+  const all   = document.getElementById(`all-${code}`).checked;
+  const cls   = getClasses();
+
+  if (all) {
+    getUsers()[t].classrooms.forEach(cid => {
+      cls[cid].customDrills = cls[cid].customDrills || {};
+      cls[cid].customDrills[d] = lines;
+    });
+  } else {
+    cls[code].customDrills = cls[code].customDrills || {};
+    cls[code].customDrills[d] = lines;
+  }
+  saveClasses(cls);
+  renderTeacher(t);
+};
+// ─── copy END ───
       });
       saveUsers(usersData);
       renderTeacher(t);
@@ -425,36 +440,6 @@ function renderTeacher(t) {
   });
 }
 // ─── end renderTeacher ───
-
-    // ─── copy START ───
-
-// Cancel button: hide the editor
-document.getElementById(`cancel-${code}`).onclick = () => {
-  document.getElementById(`editor-${code}`).style.display = 'none';
-};
-
-// Save button: write into customDrills and rerender
-document.getElementById(`save-${code}`).onclick = () => {
-  const d     = document.getElementById(`date-${code}`).value;
-  const lines = document.getElementById(`ta-${code}`)
-                  .value.split('\n')
-                  .map(l=>l.trim()).filter(Boolean);
-  const all   = document.getElementById(`all-${code}`).checked;
-  const cls   = getClasses();
-
-  if (all) {
-    getUsers()[t].classrooms.forEach(cid => {
-      cls[cid].customDrills = cls[cid].customDrills || {};
-      cls[cid].customDrills[d] = lines;
-    });
-  } else {
-    cls[code].customDrills = cls[code].customDrills || {};
-    cls[code].customDrills[d] = lines;
-  }
-  saveClasses(cls);
-  renderTeacher(t);
-};
-// ─── copy END ───
 
   });
 }

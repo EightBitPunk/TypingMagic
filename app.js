@@ -238,87 +238,159 @@ async function handleBulkUpload(evt, code) {
   };
 
   // Full Teacher View
+  // ─── Full Teacher View (v0.1.47) ───
 function renderTeacher(t) {
-  const users   = getUsers(),
-        classes = getClasses(),
-        container = document.getElementById('student-progress-table');
+  const usersData = getUsers();
+  const clsData   = getClasses();
+  const container = document.getElementById('student-progress-table');
 
   let html = '';
-  (users[t].classrooms || []).forEach(code => {
-    const c = classes[code];
+  (usersData[t].classrooms || []).forEach(code => {
+    const c = clsData[code];
     if (!c) return;
 
-    html += `<div style="margin-bottom:1.5em;padding:1em;border:1px solid #ccc;border-radius:4px;">`;
-    // Header
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5em;">`;
-    html += `<div><strong>${c.name}</strong> (Code: ${code}) `;
-    html += `<button class="btn secondary" id="delete-selected-${code}">DELETE CHECKED ASSIGNMENTS</button></div>`;
-    html += `<div>`;
-    html += `<button class="custom-btn" data-code="${code}">Customize Drills</button> `;
-    html += `<button class="bulk-btn"   data-code="${code}">Bulk Upload</button> `;
-html += `<button 
-             class="btn danger delete-class" 
-             data-code="${code}"
-             style="background:red;color:white;border:none;"
-           >
-             DELETE CLASS
-         </button>`;
-html += `</div></div>`;
+    // Card wrapper
+    html += `
+      <div style="margin-bottom:1.5em;padding:1em;
+                  border:1px solid #ccc;border-radius:4px;">
+        <div style="display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    margin-bottom:0.5em;">
+          <div>
+            <strong>${c.name}</strong> (Code: ${code})
+            <button class="btn secondary" id="delete-selected-${code}">
+              DELETE CHECKED ASSIGNMENTS
+            </button>
+          </div>
+          <div>
+            <button class="custom-btn" data-code="${code}">
+              Customize Drills
+            </button>
+            <button class="bulk-btn" data-code="${code}">
+              Bulk Upload
+            </button>
+            <button class="btn danger delete-class" data-code="${code}"
+                    style="background:red;color:white;border:none;">
+              DELETE CLASS
+            </button>
+          </div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <th></th>
+            <th>Student</th>
+            <th>Assignment Date</th>
+            <th>Completed on Same Date?</th>
+            <th>Accuracy</th>
+          </tr>
+    `;
 
-    // Table
-    html += `<table style="width:100%;border-collapse:collapse;">
-      <tr>
-        <th></th><th>Student</th><th>Assignment</th><th>Date of Completion</th><th>Accuracy</th>
-      </tr>`;
-
+    // Group by date & average accuracy
     (c.students || []).forEach(s => {
-      const prog = users[s].progress || {};
-      Object.entries(prog).forEach(([d,arr]) =>
-        arr.forEach(rec => {
-          html += `<tr style="border-top:1px solid #eee;">
+      const prog = usersData[s].progress || {};
+      Object.entries(prog).forEach(([date, records]) => {
+        const avg     = Math.round(records.reduce((sum,r)=>sum+r.accuracy,0) / records.length);
+        const isLate  = records.some(r=>r.late);
+        // For (G), assume each record may have a timestamp; fallback to date
+        const lastTs  = records[records.length-1].timestamp || date;
+        const sameDay = lastTs.startsWith(date) ? "YES" : lastTs;
+
+        html += `
+          <tr class="${isLate?'late-row':''}" style="border-top:1px solid #eee;">
             <td style="text-align:center;">
               <input type="checkbox" class="del-assignment"
-                     data-student="${s}" data-date="${d}" data-drill="${rec.drill}" />
+                     data-student="${s}"
+                     data-date="${date}" />
             </td>
             <td>${s}</td>
-            <td>Drill ${rec.drill + 1}</td>
-            <td>${d}</td>
-            <td>${rec.accuracy}%</td>
-          </tr>`;
-        })
-      );
+            <td>${date}</td>
+            <td>${sameDay}</td>
+            <td>${avg}%</td>
+          </tr>
+        `;
+      });
     });
 
-    html += `</table></div>`;
+    html += `
+        </table>
+      </div>
+    `;
   });
 
   container.innerHTML = html;
 
-  // Wire up the new buttons:
-  (users[t].classrooms || []).forEach(code => {
-    // Delete checked
+  // ─── Wire up all restored handlers ───
+  (usersData[t].classrooms || []).forEach(code => {
+    // Customize Drills
+    document.querySelector(`.custom-btn[data-code="${code}"]`).onclick = () => {
+      openEditor(t, code);
+    };
+
+    // Bulk Upload
+    document.querySelector(`.bulk-btn[data-code="${code}"]`).onclick = () => {
+      openBulk(t, code);
+    };
+    document.getElementById(`bulk-file-${code}`).onchange = e => handleBulkUpload(e, code);
+
+    // Delete Class
+    document.querySelector(`.delete-class[data-code="${code}"]`).onclick = () => {
+      if (!confirm('Delete entire class?')) return;
+      delete clsData[code];
+      saveClasses(clsData);
+      usersData[t].classrooms =
+        usersData[t].classrooms.filter(c=>c!==code);
+      saveUsers(usersData);
+      renderTeacher(t);
+    };
+
+    // Delete Student
+    document.querySelectorAll(`.del-student[data-code="${code}"]`)
+      .forEach(btn => btn.onclick = () => {
+        const s = btn.dataset.student;
+        if (!confirm(`Remove student ${s}?`)) return;
+        clsData[code].students =
+          clsData[code].students.filter(x=>x!==s);
+        saveClasses(clsData);
+        renderTeacher(t);
+      });
+
+    // Delete All Assignments on Date
+    document.querySelectorAll(`.del-date[data-code="${code}"]`)
+      .forEach(btn => btn.onclick = () => {
+        const d = btn.dataset.date;
+        if (!confirm(`Remove all completions on ${d}?`)) return;
+        Object.values(usersData).forEach(uobj => {
+          if (uobj.progress?.[d]) {
+            delete uobj.progress[d];
+          }
+        });
+        saveUsers(usersData);
+        renderTeacher(t);
+      });
+
+    // Delete Checked Assignments
     document.getElementById(`delete-selected-${code}`).onclick = () => {
-      const boxes = Array.from(document.querySelectorAll('.del-assignment:checked'));
+      const boxes = Array.from(document.querySelectorAll(
+        '.del-assignment:checked'));
       if (!boxes.length) return alert('No assignments checked.');
       if (!confirm(`Delete ${boxes.length} assignment(s)?`)) return;
-      const usersData = getUsers();
       boxes.forEach(cb => {
         const s = cb.dataset.student,
-              d = cb.dataset.date,
-              dr = +cb.dataset.drill;
-        usersData[s].progress[d] = (usersData[s].progress[d] || []).filter(r=>r.drill!==dr);
-        if (!usersData[s].progress[d].length) delete usersData[s].progress[d];
+              d = cb.dataset.date;
+        usersData[s].progress[d] =
+          (usersData[s].progress[d]||[])
+           .filter(r=>r.date!==d);
+        if (!usersData[s].progress[d].length) {
+          delete usersData[s].progress[d];
+        }
       });
       saveUsers(usersData);
       renderTeacher(t);
     };
-    // Customize, Bulk, Delete class keep your existing handlers:
-    document.querySelector(`.custom-btn[data-code="${code}"]`).onclick = () => openEditor(t, code);
-    document.querySelector(`.bulk-btn[data-code="${code}"]`).onclick   = () => openBulk(t, code);
-    document.getElementById(`bulk-file-${code}`).onchange = e => handleBulkUpload(e, code);
-    document.querySelector(`.delete-class[data-code="${code}"]`).onclick = () => {/* your deleteClass */}
   });
 }
+// ─── end renderTeacher ───
 
   // Student view
   function renderStudent(code, student) {

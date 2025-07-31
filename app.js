@@ -1,5 +1,5 @@
-// Version 0.1.4
-8
+// Version 0.1.48
+
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
   initApp();

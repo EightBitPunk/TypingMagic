@@ -20,6 +20,33 @@ function showVersion() {
 }
 
 function initApp() {
+// -- Restore helper functions used by renderTeacher --
+
+function openEditor(t, code) {
+  localStorage.setItem("tt-temp-edit", JSON.stringify(t.drills[code] || []));
+  location.href = `custom_drills.html?code=${code}`;
+}
+
+function openBulk(t, code) {
+  const input = document.getElementById(`bulk-file-${code}`);
+  if (input) input.click();
+}
+
+async function handleBulkUpload(evt, code) {
+  const file = evt.target.files?.[0];
+  if (!file) return;
+  const text = await file.text();
+  const rows = text.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  const drills = rows.map(line => {
+    const [prompt, expected] = line.split("\t");
+    return { prompt, expected };
+  }).filter(x => x.prompt && x.expected);
+  const t = getCurrentUser();
+  t.drills[code] = drills;
+  saveUsers();
+  renderTeacher(t); // refresh UI
+}
+
   const defaultDrills = [
     'The quick brown fox jumps over the lazy dog.',
     'Typing practice improves both speed and accuracy.',

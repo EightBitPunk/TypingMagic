@@ -1,5 +1,5 @@
-// Version 0.1.47
-
+// Version 0.1.4
+8
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
   initApp();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.47';
+  badge.textContent = 'version 0.1.48';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -265,7 +265,7 @@ async function handleBulkUpload(evt, code) {
   };
 
   // Full Teacher View
-  // ─── Full Teacher View (v0.1.47) ───
+// ─── Full Teacher View (fixed) ───
 function renderTeacher(t) {
   const usersData = getUsers();
   const clsData   = getClasses();
@@ -276,7 +276,6 @@ function renderTeacher(t) {
     const c = clsData[code];
     if (!c) return;
 
-    // Card wrapper
     html += `
       <div style="margin-bottom:1.5em;padding:1em;
                   border:1px solid #ccc;border-radius:4px;">
@@ -310,16 +309,13 @@ function renderTeacher(t) {
             <th>Assignment Date</th>
             <th>Completed on Same Date?</th>
             <th>Accuracy</th>
-          </tr>
-    `;
+          </tr>`;
 
-    // Group by date & average accuracy
     (c.students || []).forEach(s => {
       const prog = usersData[s].progress || {};
       Object.entries(prog).forEach(([date, records]) => {
         const avg     = Math.round(records.reduce((sum,r)=>sum+r.accuracy,0) / records.length);
         const isLate  = records.some(r=>r.late);
-        // For (G), assume each record may have a timestamp; fallback to date
         const lastTs  = records[records.length-1].timestamp || date;
         const sameDay = lastTs.startsWith(date) ? "YES" : lastTs;
 
@@ -334,33 +330,27 @@ function renderTeacher(t) {
             <td>${date}</td>
             <td>${sameDay}</td>
             <td>${avg}%</td>
-          </tr>
-        `;
+          </tr>`;
       });
     });
 
     html += `
         </table>
-      </div>
-    `;
+      </div>`;
   });
 
   container.innerHTML = html;
 
-  // ─── Wire up all restored handlers ───
+  // ─── Wire up handlers ───
   (usersData[t].classrooms || []).forEach(code => {
-    // Customize Drills
-    document.querySelector(`.custom-btn[data-code="${code}"]`).onclick = () => {
-      openEditor(t, code);
-    };
+    document.querySelector(`.custom-btn[data-code="${code}"]`).onclick =
+      () => openEditor(t, code);
 
-    // Bulk Upload
-    document.querySelector(`.bulk-btn[data-code="${code}"]`).onclick = () => {
-      openBulk(t, code);
-    };
-    document.getElementById(`bulk-file-${code}`).onchange = e => handleBulkUpload(e, code);
+    document.querySelector(`.bulk-btn[data-code="${code}"]`).onclick =
+      () => openBulk(t, code);
+    document.getElementById(`bulk-file-${code}`).onchange =
+      e => handleBulkUpload(e, code);
 
-    // Delete Class
     document.querySelector(`.delete-class[data-code="${code}"]`).onclick = () => {
       if (!confirm('Delete entire class?')) return;
       delete clsData[code];
@@ -371,40 +361,13 @@ function renderTeacher(t) {
       renderTeacher(t);
     };
 
-    // Delete Student
-    document.querySelectorAll(`.del-student[data-code="${code}"]`)
-      .forEach(btn => btn.onclick = () => {
-        const s = btn.dataset.student;
-        if (!confirm(`Remove student ${s}?`)) return;
-        clsData[code].students =
-          clsData[code].students.filter(x=>x!==s);
-        saveClasses(clsData);
-        renderTeacher(t);
-      });
-
-    // Delete All Assignments on Date
-    document.querySelectorAll(`.del-date[data-code="${code}"]`)
-      .forEach(btn => btn.onclick = () => {
-        const d = btn.dataset.date;
-        if (!confirm(`Remove all completions on ${d}?`)) return;
-        Object.values(usersData).forEach(uobj => {
-          if (uobj.progress?.[d]) {
-            delete uobj.progress[d];
-          }
-        });
-        saveUsers(usersData);
-        renderTeacher(t);
-      });
-
-    // Delete Checked Assignments
     document.getElementById(`delete-selected-${code}`).onclick = () => {
       const boxes = Array.from(document.querySelectorAll(
         '.del-assignment:checked'));
       if (!boxes.length) return alert('No assignments checked.');
       if (!confirm(`Delete ${boxes.length} assignment(s)?`)) return;
       boxes.forEach(cb => {
-        const s = cb.dataset.student,
-              d = cb.dataset.date;
+        const s = cb.dataset.student, d = cb.dataset.date;
         usersData[s].progress[d] =
           (usersData[s].progress[d]||[])
            .filter(r=>r.date!==d);

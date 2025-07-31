@@ -1,4 +1,4 @@
-// Version 0.1.52
+// Version 0.1.53
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.52';
+  badge.textContent = 'version 0.1.53';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -391,34 +391,31 @@ document.getElementById(`select-all-${code}`).onchange = e => {
 };
 
 
-// ─── EDIT CLASS handler ───
+// ─── Edit-Class handler ───
 document.querySelector(`.edit-class[data-code="${code}"]`).onclick = () => {
-  // Prompt for which student to remove:
   const cls = clsData[code];
+  // 1) list students
   const student = prompt(
-    `DELETE STUDENT:\n\n` +
-    cls.students.join('\n') +
-    `\n\nEnter the EXACT name to remove, or CANCEL to exit:`
+    `DELETE STUDENT:\n\n${cls.students.join('\n')}\n\n` +
+    `Enter EXACT name to remove, or CANCEL:`
   );
-  if (!student) return;  // cancelled
-
+  if (!student) return;  // user cancelled
   if (!cls.students.includes(student)) {
     return alert("No such student in this class.");
   }
+  // 2) confirm deletion
   if (!confirm(`DELETE ${student} and remove from class?`)) return;
-
-  // Remove student record:
-  clsData[code].students = clsData[code].students.filter(s => s !== student);
+  
+  // 3) perform removal
+  cls.students = cls.students.filter(s => s !== student);
   const users = getUsers();
   delete users[student];
   saveUsers(users);
   saveClasses(clsData);
+  
+  // 4) refresh UI
   renderTeacher(t);
 };
-
-      saveUsers(usersData);
-      renderTeacher(t);
-    };
 
     // ─── copy START ───
 

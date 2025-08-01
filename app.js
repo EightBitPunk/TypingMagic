@@ -320,15 +320,23 @@ function initApp() {
     if(!confirm(`Preview for ${key}?\n\n${drills.join('\n')}\n\nProceed?`)) return;
     renderDrillsWithDate(code, drills, key, student, true);
   }
-  function renderDrillsWithDate(code, drills, dateKey, student, isLate){
-    let idx=0,pos=0;
-    const stats=document.getElementById('student-stats');
-    stats.textContent='';
-    function updateAcc(){
-      const spans=[...document.querySelectorAll('.char')];
-      const errs=spans.filter(s=>s.classList.contains('error')).length;
-      stats.textContent=`Accuracy: ${Math.round((spans.length-errs)/spans.length*100)}%`;
-    }
+ function renderDrillsWithDate(code, drills, dateKey, student, isLate) {
+   let idx=0, pos=0;
+-  const statsDiv = document.getElementById('student-stats');
+-  statsDiv.textContent = '';
++  // show accuracy next to feedback
++  const accuracyDiv = document.getElementById('student-accuracy');
++  accuracyDiv.textContent = '';
+
+   function updateAcc(){
+     const spans = document.querySelectorAll('.char');
+     const errs = [...spans].filter(s => s.classList.contains('error')).length;
+     const pct  = Math.max(0, Math.round((spans.length-errs)/spans.length*100));
+-    statsDiv.textContent = `Accuracy: ${pct}%`;
++    accuracyDiv.textContent = `Accuracy: ${pct}%`;
+   }
+
+
     function loadOne(){
       promptEl.innerHTML='';
       drills[idx].split('').forEach(ch=>{
@@ -569,6 +577,7 @@ function initApp() {
   }
 
 } // end initApp
+
 
 
 

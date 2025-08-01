@@ -65,19 +65,33 @@
     </section>
 
     <!-- Student Dashboard -->
-    <section id="student-dashboard" class="hidden">
-      <h2>Welcome, <span id="student-name"></span> (Student)</h2>
-      <div id="drill-container" class="card">
-        <p id="prompt" tabindex="0"></p>
-        <div id="feedback"></div>
-        <button id="next-btn" class="btn primary" disabled>Next</button>
-      </div>
-      <div id="calendar" class="card"></div>
-      <div id="student-stats" class="info"></div>
-    </section>
+<!-- Student Dashboard -->
+<section id="student-dashboard" class="hidden">
+  <h2>Welcome, <span id="student-name"></span> (Student)</h2>
+- <div id="drill-container" class="card">
+-   <p id="prompt" tabindex="0"></p>
+-   <div id="feedback"></div>
+-   <button id="next-btn" class="btn primary" disabled>Next</button>
+- </div>
++ <div id="drill-container" class="card">
++   <p id="prompt" tabindex="0"></p>
++   <!-- feedback + accuracy side by side -->
++   <div style="display:flex; align-items:center; gap:1em; margin-bottom: .5em;">
++     <div id="feedback"></div>
++     <div id="student-accuracy" style="font-weight:bold;"></div>
++   </div>
++   <button id="next-btn" class="btn primary" disabled>Next</button>
++ </div>
+  <div id="calendar" class="card"></div>
+- <div id="student-stats" class="info"></div>
+</section>
++ <!-- old student-stats removed -->
+</section>
+
   </main>
 
   <button id="logout-btn" class="btn secondary" style="display:none;">Log Out</button>
   <script src="app.js"></script>
 </body>
 </html>
+

@@ -33,6 +33,10 @@ function initApp() {
   const getCurrentUser = () =>
     JSON.parse(localStorage.getItem('currentUser') || 'null');
 
+    // ─── Calendar state for student view ───
+  let calYear  = new Date().getFullYear();
+  let calMonth = new Date().getMonth();
+  
   // ─── Login / Logout UI wiring ───
   const logoutBtn   = document.getElementById('logout-btn');
   const loginScreen = document.getElementById('login-screen');
@@ -218,43 +222,98 @@ function initApp() {
     buildCalendar(student, code);
     loadDrills(code, student);
   }
+
+  // ─── NEW buildCalendar with month/year and navigation ───
   function buildCalendar(student, code) {
     const cls  = getClasses()[code];
-    const prog = getUsers()[student].progress||{};
-    const today= new Date(), year=today.getFullYear(),
-          mon = today.getMonth(), first=new Date(year,mon,1).getDay(),
-          days= new Date(year,mon+1,0).getDate(),
-          todayD=today.getDate();
-    const cal  = document.getElementById('calendar');
-    cal.innerHTML = '';
-    const tbl  = document.createElement('table');
-    tbl.style.borderCollapse='collapse';
-    const hdr = document.createElement('tr');
-    ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{
-      const th=document.createElement('th');
-      th.textContent=d; th.style.padding='4px'; hdr.appendChild(th);
+    const prog = (getUsers()[student].progress)||{};
+    const container = document.getElementById('calendar');
+    container.innerHTML = '';  // clear out
+
+    // Header with Prev/MonthName/Next
+    const monthNames = [
+      "January","February","March","April","May","June",
+      "July","August","September","October","November","December"
+    ];
+    const hdr = document.createElement('div');
+    hdr.style = "display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;";
+    hdr.innerHTML = `
+      <button id="prev-month">&lt; Prev</button>
+      <strong>${monthNames[calMonth]} ${calYear}</strong>
+      <button id="next-month">Next &gt;</button>
+    `;
+    container.appendChild(hdr);
+
+    // Build the days‐of‐week row
+    const tbl = document.createElement('table');
+    tbl.style.borderCollapse = 'collapse';
+    const headerRow = document.createElement('tr');
+    ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => {
+      const th = document.createElement('th');
+      th.textContent = d;
+      th.style.padding = '4px';
+      headerRow.appendChild(th);
     });
-    tbl.append(hdr);
-    let tr=document.createElement('tr');
-    for(let i=0;i<first;i++){ const td=document.createElement('td'); td.style.padding='4px'; tr.append(td); }
-    for(let d=1;d<=days;d++){
-      if((first+d-1)%7===0 && d!==1){ tbl.append(tr); tr=document.createElement('tr'); }
-      const td=document.createElement('td');
-      td.textContent=d; td.style.width='24px'; td.style.height='24px';
-      td.style.textAlign='center'; td.style.cursor='pointer';
-      const key=`${year}-${String(mon+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      if(d<todayD){
-        td.style.background= prog[key]?'lightgreen':'lightcoral';
-        if(!prog[key]) td.onclick=()=>handlePast(code,key,student);
-        else           td.onclick=()=>alert("Already done!");
-      } else if(d===todayD){
-        td.style.background= prog[key]?'lightgreen':'lightblue';
-      } else td.style.background='lightgray';
-      tr.append(td);
+    tbl.appendChild(headerRow);
+
+    // Compute first weekday and days in month
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+    let tr = document.createElement('tr');
+
+    // Empty cells before month start
+    for (let i = 0; i < firstDay; i++) {
+      const td = document.createElement('td');
+      td.style.padding = '4px';
+      tr.appendChild(td);
     }
-    tbl.append(tr);
-    cal.append(tbl);
+
+    // Fill each day
+    for (let day = 1; day <= daysInMonth; day++) {
+      if ((firstDay + day - 1) % 7 === 0 && day !== 1) {
+        tbl.appendChild(tr);
+        tr = document.createElement('tr');
+      }
+      const td = document.createElement('td');
+      td.textContent = day;
+      td.style.width = '24px';
+      td.style.height = '24px';
+      td.style.textAlign = 'center';
+      td.style.cursor = 'pointer';
+
+      const key = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      if (prog[key]) {
+        td.style.background = 'lightgreen';
+        td.onclick = () => alert("You've already completed this drill.");
+      } else {
+        td.style.background = (new Date().toISOString().split('T')[0] > key)
+                            ? 'lightcoral'
+                            : (new Date().toISOString().split('T')[0] === key?'lightblue':'lightgray');
+        if (new Date(key) < new Date()) {
+          td.onclick = () => handlePast(code, key, student);
+        }
+      }
+
+      tr.appendChild(td);
+    }
+
+    tbl.appendChild(tr);
+    container.appendChild(tbl);
+
+    // Wire up Prev / Next buttons
+    document.getElementById('prev-month').onclick = () => {
+      calMonth--;
+      if (calMonth < 0) { calMonth = 11; calYear--; }
+      buildCalendar(student, code);
+    };
+    document.getElementById('next-month').onclick = () => {
+      calMonth++;
+      if (calMonth > 11) { calMonth = 0; calYear++; }
+      buildCalendar(student, code);
+    };
   }
+  // ─── end buildCalendar ───
+
   function handlePast(code,key,student){
     const cls = getClasses()[code];
     const drills = cls.customDrills[key]||cls.drills;
@@ -510,3 +569,4 @@ function initApp() {
   }
 
 } // end initApp
+

@@ -1,4 +1,4 @@
-// Version 0.1.61
+// Version 0.1.62
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.61';
+  badge.textContent = 'version 0.1.62';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -320,22 +320,18 @@ function initApp() {
     if(!confirm(`Preview for ${key}?\n\n${drills.join('\n')}\n\nProceed?`)) return;
     renderDrillsWithDate(code, drills, key, student, true);
   }
+
  function renderDrillsWithDate(code, drills, dateKey, student, isLate) {
    let idx=0, pos=0;
--  const statsDiv = document.getElementById('student-stats');
--  statsDiv.textContent = '';
-+  // show accuracy next to feedback
-+  const accuracyDiv = document.getElementById('student-accuracy');
-+  accuracyDiv.textContent = '';
+   const accuracyDiv = document.getElementById('student-accuracy');
+  accuracyDiv.textContent = '';
 
    function updateAcc(){
      const spans = document.querySelectorAll('.char');
      const errs = [...spans].filter(s => s.classList.contains('error')).length;
      const pct  = Math.max(0, Math.round((spans.length-errs)/spans.length*100));
--    statsDiv.textContent = `Accuracy: ${pct}%`;
-+    accuracyDiv.textContent = `Accuracy: ${pct}%`;
+     accuracyDiv.textContent = `Accuracy: ${pct}%`;
    }
-
 
     function loadOne(){
       promptEl.innerHTML='';
@@ -577,6 +573,7 @@ function initApp() {
   }
 
 } // end initApp
+
 
 
 

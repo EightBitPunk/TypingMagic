@@ -1,4 +1,4 @@
-// Version 0.1.68
+// Version 0.1.71
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.68';
+  badge.textContent = 'version 0.1.71';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -630,6 +630,7 @@ function renderTeacher(t) {
   }
 
 } // end initApp
+
 
 
 

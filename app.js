@@ -224,94 +224,93 @@ function initApp() {
   }
 
   // ─── NEW buildCalendar with month/year and navigation ───
-  function buildCalendar(student, code) {
-    const cls  = getClasses()[code];
-    const prog = (getUsers()[student].progress)||{};
-    const container = document.getElementById('calendar');
-    container.innerHTML = '';  // clear out
 
-    // Header with Prev/MonthName/Next
-    const monthNames = [
-      "January","February","March","April","May","June",
-      "July","August","September","October","November","December"
-    ];
-    const hdr = document.createElement('div');
-    hdr.style = "display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;";
-    hdr.innerHTML = `
-      <button id="prev-month">&lt; Prev</button>
-      <strong>${monthNames[calMonth]} ${calYear}</strong>
-      <button id="next-month">Next &gt;</button>
-    `;
-    container.appendChild(hdr);
+function buildCalendar(student, code) {
+  const calendarEl = document.getElementById('calendar');
+  calendarEl.innerHTML = '';
+  const today = new Date();
+  const currentMonth = calendarState[student]?.month ?? today.getMonth();
+  const currentYear = calendarState[student]?.year ?? today.getFullYear();
+  const shown = new Date(currentYear, currentMonth);
 
-    // Build the days‐of‐week row
-    const tbl = document.createElement('table');
-    tbl.style.borderCollapse = 'collapse';
-    const headerRow = document.createElement('tr');
-    ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => {
-      const th = document.createElement('th');
-      th.textContent = d;
-      th.style.padding = '4px';
-      headerRow.appendChild(th);
-    });
-    tbl.appendChild(headerRow);
+  const classes = getClasses();
+  const classSettings = classes[code] || {};
+  const allowPast = !!classSettings.allowPast;
+  const allowFuture = !!classSettings.allowFuture;
 
-    // Compute first weekday and days in month
-    const firstDay = new Date(calYear, calMonth, 1).getDay();
-    const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
-    let tr = document.createElement('tr');
+  const firstDay = new Date(shown.getFullYear(), shown.getMonth(), 1).getDay();
+  const daysInMonth = new Date(shown.getFullYear(), shown.getMonth() + 1, 0).getDate();
 
-    // Empty cells before month start
-    for (let i = 0; i < firstDay; i++) {
-      const td = document.createElement('td');
-      td.style.padding = '4px';
-      tr.appendChild(td);
-    }
+  const monthName = shown.toLocaleString('default', { month: 'long' });
+  const year = shown.getFullYear();
+  const header = document.createElement('div');
+  header.className = 'calendar-header';
+  header.innerHTML = `
+    <button class="btn secondary" id="prev-month">&lt;</button>
+    <span style="font-weight:bold;">${monthName} ${year}</span>
+    <button class="btn secondary" id="next-month">&gt;</button>
+  `;
+  calendarEl.appendChild(header);
 
-    // Fill each day
-    for (let day = 1; day <= daysInMonth; day++) {
-      if ((firstDay + day - 1) % 7 === 0 && day !== 1) {
-        tbl.appendChild(tr);
-        tr = document.createElement('tr');
-      }
-      const td = document.createElement('td');
-      td.textContent = day;
-      td.style.width = '24px';
-      td.style.height = '24px';
-      td.style.textAlign = 'center';
-      td.style.cursor = 'pointer';
+  const grid = document.createElement('div');
+  grid.className = 'calendar-grid';
 
-      const key = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      if (prog[key]) {
-        td.style.background = 'lightgreen';
-        td.onclick = () => alert("You've already completed this drill.");
-      } else {
-        td.style.background = (new Date().toISOString().split('T')[0] > key)
-                            ? 'lightcoral'
-                            : (new Date().toISOString().split('T')[0] === key?'lightblue':'lightgray');
-        if (new Date(key) < new Date()) {
-          td.onclick = () => handlePast(code, key, student);
-        }
-      }
+  ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => {
+    const cell = document.createElement('div');
+    cell.className = 'calendar-cell header-cell';
+    cell.textContent = d;
+    grid.appendChild(cell);
+  });
 
-      tr.appendChild(td);
-    }
-
-    tbl.appendChild(tr);
-    container.appendChild(tbl);
-
-    // Wire up Prev / Next buttons
-    document.getElementById('prev-month').onclick = () => {
-      calMonth--;
-      if (calMonth < 0) { calMonth = 11; calYear--; }
-      buildCalendar(student, code);
-    };
-    document.getElementById('next-month').onclick = () => {
-      calMonth++;
-      if (calMonth > 11) { calMonth = 0; calYear++; }
-      buildCalendar(student, code);
-    };
+  for (let i = 0; i < firstDay; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'calendar-cell empty';
+    grid.appendChild(cell);
   }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(shown.getFullYear(), shown.getMonth(), day);
+    const iso = date.toISOString().slice(0, 10);
+    const cell = document.createElement('div');
+    cell.className = 'calendar-cell day-cell';
+    cell.textContent = day;
+
+    const isToday = iso === new Date().toISOString().slice(0, 10);
+    const isBeforeToday = date < today.setHours(0,0,0,0);
+    const isAfterToday  = date > new Date().setHours(23,59,59,999);
+
+    // Disable based on class settings
+    const isDisabled = (isBeforeToday && !allowPast) || (isAfterToday && !allowFuture);
+    if (isDisabled) {
+      cell.classList.add('disabled');
+      cell.style.opacity = 0.3;
+      cell.style.pointerEvents = 'none';
+    } else {
+      cell.onclick = () => loadDrillForDate(student, code, iso);
+      if (isToday) cell.style.border = '2px solid #ffa500';
+    }
+
+    grid.appendChild(cell);
+  }
+
+  calendarEl.appendChild(grid);
+
+  document.getElementById('prev-month').onclick = () => {
+    calendarState[student] = {
+      year: currentMonth === 0 ? currentYear - 1 : currentYear,
+      month: currentMonth === 0 ? 11 : currentMonth - 1,
+    };
+    buildCalendar(student, code);
+  };
+  document.getElementById('next-month').onclick = () => {
+    calendarState[student] = {
+      year: currentMonth === 11 ? currentYear + 1 : currentYear,
+      month: currentMonth === 11 ? 0 : currentMonth + 1,
+    };
+    buildCalendar(student, code);
+  };
+}
+
   // ─── end buildCalendar ───
 
   function handlePast(code,key,student){
@@ -587,6 +586,7 @@ function renderTeacher(t) {
   }
 
 } // end initApp
+
 
 
 

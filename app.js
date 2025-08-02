@@ -1,4 +1,4 @@
-// Version 0.1.67
+// Version 0.1.671
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.67';
+  badge.textContent = 'version 0.1.671';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -375,26 +375,23 @@ function initApp() {
     renderDrillsWithDate(code, cls.customDrills[today]||cls.drills, today, student, false);
   }
 
-  // ─── Teacher side ───
+  // ─── StartTeacherView  ───
+
 // ─── Replace your existing renderTeacher(t) with this ───
 function renderTeacher(t) {
   const usersData = getUsers();
   const clsData   = getClasses();
   const container = document.getElementById('student-progress-table');
-
-  // build HTML
   let html = '';
+
+  // Build the HTML for each class
   (usersData[t].classrooms || []).forEach(code => {
     const c = clsData[code];
     if (!c) return;
 
     html += `
-      <div style="margin-bottom:1.5em;padding:1em;
-                  border:1px solid #ccc;border-radius:4px;">
-        <div style="display:flex;
-                    justify-content:space-between;
-                    align-items:center;
-                    margin-bottom:0.5em;">
+      <div style="margin-bottom:1.5em;padding:1em;border:1px solid #ccc;border-radius:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5em;">
           <div>
             <strong>${c.name}</strong> (Code: ${code})
             <button class="btn secondary" id="delete-selected-${code}">
@@ -408,35 +405,35 @@ function renderTeacher(t) {
           </div>
         </div>
 
-        <input type="file" id="bulk-file-${code}" accept=".txt" class="hidden" />
+        <input type="file" id="bulk-file-${code}" accept=".txt" class="hidden"/>
 
         <div id="editor-${code}" style="display:none;margin-bottom:1em;">
           <label>Date: <input type="date" id="date-${code}" /></label>
-          <label><input type="checkbox" id="all-${code}" /> All Classes</label><br>
-          <textarea id="ta-${code}" rows="4" style="width:100%;margin-top:.5em;"></textarea><br>
+          <label><input type="checkbox" id="all-${code}" /> All Classes</label><br/>
+          <textarea id="ta-${code}" rows="4" style="width:100%;margin-top:.5em;"></textarea><br/>
           <button id="save-${code}" class="btn primary">Save</button>
           <button id="cancel-${code}" class="btn secondary">Cancel</button>
         </div>
 
         <table style="width:100%;border-collapse:collapse;">
           <tr>
-            <th><input type="checkbox" id="select-all-${code}" /></th>
+            <th><input type="checkbox" id="select-all-${code}"/></th>
             <th>Student</th>
             <th>Assignment Date</th>
             <th>Completed Same Day?</th>
             <th>Accuracy</th>
           </tr>`;
 
-    // each student & date row
+    // Add one row per student/date
     (c.students || []).forEach(s => {
       const prog = usersData[s].progress || {};
       Object.entries(prog).forEach(([date, records]) => {
-        const avg     = Math.round(records.reduce((sum,r)=>sum+r.accuracy,0) / records.length);
+        const avg     = Math.round(records.reduce((sum,r)=>sum+r.accuracy,0)/records.length);
         const late    = records.some(r=>r.late);
         const lastTs  = records[records.length-1].timestamp || date;
         const sameDay = lastTs.startsWith(date) ? 'YES' : lastTs;
         html += `
-          <tr${late ? ' class="late-row"' : ''} style="border-top:1px solid #eee;">
+          <tr${late? ' class="late-row"':''} style="border-top:1px solid #eee;">
             <td style="text-align:center;">
               <input type="checkbox" class="del-assignment"
                      data-student="${s}" data-date="${date}" />
@@ -449,104 +446,104 @@ function renderTeacher(t) {
       });
     });
 
-    html += `
-        </table>
-      </div>`;
+    html += `</table></div>`;
   });
 
   container.innerHTML = html;
 
-  // wire up handlers
+  // Wire up handlers for each class block
   (usersData[t].classrooms || []).forEach(code => {
-    // Customize Drills
-    document.querySelector(`.custom-btn[data-code="${code}"]`).onclick =
-      () => openEditor(t, code);
+    // 1) Customize Drills button → open editor
+    document.querySelector(`.custom-btn[data-code="${code}"]`).onclick = () =>
+      openEditor(t, code);
 
-    // Bulk Upload
-    document.querySelector(`.bulk-btn[data-code="${code}"]`).onclick =
-      () => openBulk(t, code);
-    document.getElementById(`bulk-file-${code}`).onchange =
-      e => handleBulkUpload(e, code);
-
-    // DELETE SELECTED ASSIGNMENTS
-// DELETE SELECTED ASSIGNMENTS
-document.getElementById(`delete-selected-${code}`).onclick = () => {
-  const boxes = Array.from(
-    document.querySelectorAll('.del-assignment:checked')
-  );
-  if (!boxes.length) {
-    alert('No assignments selected.');
-    return;
-  }
-  if (!confirm(`Delete ${boxes.length} assignment(s)?`)) return;
-
-  boxes.forEach(cb => {
-    const student = cb.dataset.student;
-    const date    = cb.dataset.date;
-    // remove the entire date entry:
-    delete usersData[student].progress[date];
-  });
-
-  // persist and re-render
-  saveUsers(usersData);
-  renderTeacher(t);
-};
-
-    // Select‐All master checkbox
-    document.getElementById(`select-all-${code}`).onchange = e => {
-      const checked = e.target.checked;
-      document.querySelectorAll('.del-assignment')
-              .forEach(cb => cb.checked = checked);
+    // ** New: when the teacher changes the date picker, reload the textarea **
+    document.getElementById(`date-${code}`).onchange = e => {
+      const cls = getClasses()[code];
+      const d   = e.target.value;
+      document.getElementById(`ta-${code}`).value =
+        (cls.customDrills[d] || cls.drills).join('\n');
     };
 
-    // EDIT CLASS (remove a student)
+    // 2) Bulk Upload
+    document.querySelector(`.bulk-btn[data-code="${code}"]`).onclick = () =>
+      openBulk(t, code);
+    document.getElementById(`bulk-file-${code}`).onchange = e =>
+      handleBulkUpload(e, code);
+
+    // 3) Delete selected assignments
+    document.getElementById(`delete-selected-${code}`).onclick = () => {
+      const boxes = Array.from(
+        document.querySelectorAll('.del-assignment:checked')
+      );
+      if (!boxes.length) { alert('No assignments selected.'); return; }
+      if (!confirm(`Delete ${boxes.length} assignment(s)?`)) return;
+
+      boxes.forEach(cb => {
+        const student = cb.dataset.student;
+        const date    = cb.dataset.date;
+        delete usersData[student].progress[date];
+      });
+
+      saveUsers(usersData);
+      renderTeacher(t);
+    };
+
+    // 4) Select‐All master checkbox
+    document.getElementById(`select-all-${code}`).onchange = e => {
+      const checked = e.target.checked;
+      document.querySelectorAll('.del-assignment').forEach(cb => {
+        cb.checked = checked;
+      });
+    };
+
+    // 5) Edit Class (remove a student)
     document.querySelector(`.edit-class[data-code="${code}"]`).onclick = () => {
-      const cls = clsData[code];
+      const clsList = getClasses();
+      const cls     = clsList[code];
       const student = prompt(
-        `DELETE STUDENT:\n\n${cls.students.join('\n')}\n\n` +
-        `Exact name to remove, or CANCEL:`
+        `DELETE STUDENT:\n\n${cls.students.join('\n')}\n\nExact name to remove, or CANCEL:`
       );
       if (!student) return;
       if (!cls.students.includes(student)) {
-        alert('No such student.');
-        return;
+        alert('No such student.'); return;
       }
       if (!confirm(`Delete ${student}?`)) return;
       cls.students = cls.students.filter(s => s !== student);
       const allUsers = getUsers();
       delete allUsers[student];
       saveUsers(allUsers);
-      saveClasses(clsData);
+      saveClasses(clsList);
       renderTeacher(t);
     };
 
-    // Cancel & Save in drill-editor
-    document.getElementById(`cancel-${code}`).onclick = () => {
+    // 6) Cancel & Save in drill-editor
+    document.getElementById(`cancel-${code}`).onclick = () =>
       document.getElementById(`editor-${code}`).style.display = 'none';
-    };
     document.getElementById(`save-${code}`).onclick = () => {
       const d     = document.getElementById(`date-${code}`).value;
       const lines = document.getElementById(`ta-${code}`).value
-                      .split('\n').map(l=>l.trim()).filter(Boolean);
+                        .split('\n').map(l=>l.trim()).filter(Boolean);
       const all   = document.getElementById(`all-${code}`).checked;
-      const classes = getClasses();
+      const clsList = getClasses();
       if (all) {
         usersData[t].classrooms.forEach(cid => {
-          classes[cid].customDrills = classes[cid].customDrills||{};
-          classes[cid].customDrills[d] = lines;
+          clsList[cid].customDrills = clsList[cid].customDrills||{};
+          clsList[cid].customDrills[d] = lines;
         });
       } else {
-        classes[code].customDrills = classes[code].customDrills||{};
-        classes[code].customDrills[d] = lines;
+        clsList[code].customDrills = clsList[code].customDrills||{};
+        clsList[code].customDrills[d] = lines;
       }
-      saveClasses(classes);
+      saveClasses(clsList);
       renderTeacher(t);
     };
   });
 }
-// ─── end renderTeacher ───
 
-  // ─── Admin ───
+  // ─── end renderTeacher ───
+
+  // ─── StartAdmin Admin ───
   function enterAdmin(){
     logoutBtn.style.display='block';
     const existing = document.getElementById('admin');
@@ -619,6 +616,7 @@ document.getElementById(`delete-selected-${code}`).onclick = () => {
   }
 
 } // end initApp
+
 
 
 

@@ -1,4 +1,4 @@
-// Version 0.1.63_B
+// Version 0.1.62
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.62B';
+  badge.textContent = 'version 0.1.62';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -224,93 +224,94 @@ function initApp() {
   }
 
   // ─── NEW buildCalendar with month/year and navigation ───
+  function buildCalendar(student, code) {
+    const cls  = getClasses()[code];
+    const prog = (getUsers()[student].progress)||{};
+    const container = document.getElementById('calendar');
+    container.innerHTML = '';  // clear out
 
-function buildCalendar(student, code) {
-  const calendarEl = document.getElementById('calendar');
-  calendarEl.innerHTML = '';
-  const today = new Date();
-  const currentMonth = calendarState[student]?.month ?? today.getMonth();
-  const currentYear = calendarState[student]?.year ?? today.getFullYear();
-  const shown = new Date(currentYear, currentMonth);
+    // Header with Prev/MonthName/Next
+    const monthNames = [
+      "January","February","March","April","May","June",
+      "July","August","September","October","November","December"
+    ];
+    const hdr = document.createElement('div');
+    hdr.style = "display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;";
+    hdr.innerHTML = `
+      <button id="prev-month">&lt; Prev</button>
+      <strong>${monthNames[calMonth]} ${calYear}</strong>
+      <button id="next-month">Next &gt;</button>
+    `;
+    container.appendChild(hdr);
 
-  const classes = getClasses();
-  const classSettings = classes[code] || {};
-  const allowPast = !!classSettings.allowPast;
-  const allowFuture = !!classSettings.allowFuture;
+    // Build the days‐of‐week row
+    const tbl = document.createElement('table');
+    tbl.style.borderCollapse = 'collapse';
+    const headerRow = document.createElement('tr');
+    ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => {
+      const th = document.createElement('th');
+      th.textContent = d;
+      th.style.padding = '4px';
+      headerRow.appendChild(th);
+    });
+    tbl.appendChild(headerRow);
 
-  const firstDay = new Date(shown.getFullYear(), shown.getMonth(), 1).getDay();
-  const daysInMonth = new Date(shown.getFullYear(), shown.getMonth() + 1, 0).getDate();
+    // Compute first weekday and days in month
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+    let tr = document.createElement('tr');
 
-  const monthName = shown.toLocaleString('default', { month: 'long' });
-  const year = shown.getFullYear();
-  const header = document.createElement('div');
-  header.className = 'calendar-header';
-  header.innerHTML = `
-    <button class="btn secondary" id="prev-month">&lt;</button>
-    <span style="font-weight:bold;">${monthName} ${year}</span>
-    <button class="btn secondary" id="next-month">&gt;</button>
-  `;
-  calendarEl.appendChild(header);
-
-  const grid = document.createElement('div');
-  grid.className = 'calendar-grid';
-
-  ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => {
-    const cell = document.createElement('div');
-    cell.className = 'calendar-cell header-cell';
-    cell.textContent = d;
-    grid.appendChild(cell);
-  });
-
-  for (let i = 0; i < firstDay; i++) {
-    const cell = document.createElement('div');
-    cell.className = 'calendar-cell empty';
-    grid.appendChild(cell);
-  }
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(shown.getFullYear(), shown.getMonth(), day);
-    const iso = date.toISOString().slice(0, 10);
-    const cell = document.createElement('div');
-    cell.className = 'calendar-cell day-cell';
-    cell.textContent = day;
-
-    const isToday = iso === new Date().toISOString().slice(0, 10);
-    const isBeforeToday = date < today.setHours(0,0,0,0);
-    const isAfterToday  = date > new Date().setHours(23,59,59,999);
-
-    // Disable based on class settings
-    const isDisabled = (isBeforeToday && !allowPast) || (isAfterToday && !allowFuture);
-    if (isDisabled) {
-      cell.classList.add('disabled');
-      cell.style.opacity = 0.3;
-      cell.style.pointerEvents = 'none';
-    } else {
-      cell.onclick = () => loadDrillForDate(student, code, iso);
-      if (isToday) cell.style.border = '2px solid #ffa500';
+    // Empty cells before month start
+    for (let i = 0; i < firstDay; i++) {
+      const td = document.createElement('td');
+      td.style.padding = '4px';
+      tr.appendChild(td);
     }
 
-    grid.appendChild(cell);
+    // Fill each day
+    for (let day = 1; day <= daysInMonth; day++) {
+      if ((firstDay + day - 1) % 7 === 0 && day !== 1) {
+        tbl.appendChild(tr);
+        tr = document.createElement('tr');
+      }
+      const td = document.createElement('td');
+      td.textContent = day;
+      td.style.width = '24px';
+      td.style.height = '24px';
+      td.style.textAlign = 'center';
+      td.style.cursor = 'pointer';
+
+      const key = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      if (prog[key]) {
+        td.style.background = 'lightgreen';
+        td.onclick = () => alert("You've already completed this drill.");
+      } else {
+        td.style.background = (new Date().toISOString().split('T')[0] > key)
+                            ? 'lightcoral'
+                            : (new Date().toISOString().split('T')[0] === key?'lightblue':'lightgray');
+        if (new Date(key) < new Date()) {
+          td.onclick = () => handlePast(code, key, student);
+        }
+      }
+
+      tr.appendChild(td);
+    }
+
+    tbl.appendChild(tr);
+    container.appendChild(tbl);
+
+    // Wire up Prev / Next buttons
+    document.getElementById('prev-month').onclick = () => {
+      calMonth--;
+      if (calMonth < 0) { calMonth = 11; calYear--; }
+      buildCalendar(student, code);
+    };
+    document.getElementById('next-month').onclick = () => {
+      calMonth++;
+      if (calMonth > 11) { calMonth = 0; calYear++; }
+      buildCalendar(student, code);
+    };
   }
-
-  calendarEl.appendChild(grid);
-
-  document.getElementById('prev-month').onclick = () => {
-    calendarState[student] = {
-      year: currentMonth === 0 ? currentYear - 1 : currentYear,
-      month: currentMonth === 0 ? 11 : currentMonth - 1,
-    };
-    buildCalendar(student, code);
-  };
-  document.getElementById('next-month').onclick = () => {
-    calendarState[student] = {
-      year: currentMonth === 11 ? currentYear + 1 : currentYear,
-      month: currentMonth === 11 ? 0 : currentMonth + 1,
-    };
-    buildCalendar(student, code);
-  };
-}
-
   // ─── end buildCalendar ───
 
   function handlePast(code,key,student){
@@ -379,19 +380,17 @@ function buildCalendar(student, code) {
   }
 
   // ─── Teacher side ───
-function renderTeacher(t) {
-  show('teacher-dashboard');
-  document.getElementById('teacher-name').textContent = t;
+  function renderTeacher(t) {
+    const usersData = getUsers(), clsData = getClasses();
+    const container = document.getElementById('student-progress-table');
+    let html = '';
 
-  const container = document.getElementById('student-progress-table');
-  container.innerHTML = '';
+    (usersData[t].classrooms || []).forEach(code => {
+      const c = clsData[code];
+      if (!c) return;
 
-  (usersData[t].classrooms || []).forEach(code => {
-    const c = getClasses()[code];
-    const students = Object.values(usersData).filter(u => u.role === 'student' && u.classroom === code);
-    const prog = getProgress();
-    let html = `
-      <div class="class-card card">
+      html += `
+      <div style="margin-bottom:1.5em;padding:1em;border:1px solid #ccc;border-radius:4px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5em;">
           <div>
             <strong>${c.name}</strong> (Code: ${code})
@@ -399,119 +398,107 @@ function renderTeacher(t) {
           </div>
           <div>
             <button class="custom-btn" data-code="${code}">Customize Drills</button>
-            <button class="bulk-btn"    data-code="${code}">Bulk Upload</button>
+            <button class="bulk-btn" data-code="${code}">Bulk Upload</button>
             <button class="btn primary edit-class" data-code="${code}">EDIT CLASS</button>
-            <br/>
-            <label style="font-size:0.85em;">
-              <input type="checkbox"
-                     class="allow-past"
-                     data-code="${code}"
-                     ${c.allowPast ? 'checked' : ''} />
-              Students can complete <strong>past</strong> lessons
-            </label>
-            <label style="font-size:0.85em; margin-left:1em;">
-              <input type="checkbox"
-                     class="allow-future"
-                     data-code="${code}"
-                     ${c.allowFuture ? 'checked' : ''} />
-              Students can complete <strong>future</strong> lessons
-            </label>
           </div>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Delete</th>
-              <th>Student</th>
-              <th>Date</th>
-              <th>Prompt</th>
-              <th>Accuracy</th>
-              <th>WPM</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${
-              students.map(s => {
-                const studentProg = Object.entries(prog)
-                  .filter(([key]) => key.startsWith(`${s.username}_${code}_`))
-                  .map(([key, val]) => {
-                    const [, , date] = key.split('_');
-                    return `
-                      <tr>
-                        <td><input type="checkbox" class="del-assignment" data-key="${key}" /></td>
-                        <td>${s.username}</td>
-                        <td>${date}</td>
-                        <td>${val.prompt}</td>
-                        <td>${val.accuracy}%</td>
-                        <td>${val.wpm}</td>
-                      </tr>
-                    `;
-                  }).join('');
-                return studentProg || `
-                  <tr>
-                    <td></td>
-                    <td>${s.username}</td>
-                    <td colspan="4" style="text-align:center;font-style:italic;">No drills completed yet</td>
-                  </tr>
-                `;
-              }).join('')
-            }
-          </tbody>
-        </table>
-      </div>
-    `;
-    container.innerHTML += html;
+        <input type="file" id="bulk-file-${code}" accept=".txt" class="hidden" />
 
-    // ─── Button Handlers ───
-    document.querySelector(`.custom-btn[data-code="${code}"]`).onclick = () => {
-      renderCustomizeDrills(code);
-    };
-    document.querySelector(`.bulk-btn[data-code="${code}"]`).onclick = () => {
-      renderBulkUpload(code);
-    };
-    document.querySelector(`.edit-class[data-code="${code}"]`).onclick = () => {
-      const newName = prompt("Rename this class:");
-      if (!newName) return;
-      const all = getClasses();
-      all[code].name = newName;
-      saveClasses(all);
-      renderTeacher(t);
-    };
-    document.getElementById(`delete-selected-${code}`).onclick = () => {
-      const checkboxes = document.querySelectorAll('.del-assignment:checked');
-      const p = getProgress();
-      checkboxes.forEach(cb => {
-        delete p[cb.dataset.key];
+        <div id="editor-${code}" style="display:none;margin-bottom:1em;">
+          <label>Date: <input type="date" id="date-${code}" /></label>
+          <label><input type="checkbox" id="all-${code}" /> All Classes</label><br>
+          <textarea id="ta-${code}" rows="4" style="width:100%;margin-top:.5em;"></textarea><br>
+          <button id="save-${code}" class="btn primary">Save</button>
+          <button id="cancel-${code}" class="btn secondary">Cancel</button>
+        </div>
+
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <th><input type="checkbox" id="select-all-${code}" /></th>
+            <th>Student</th><th>Assignment Date</th><th>Completed Same Day?</th><th>Accuracy</th>
+          </tr>`;
+
+      c.students.forEach(s => {
+        const prog = usersData[s].progress||{};
+        Object.entries(prog).forEach(([date,records]) => {
+          const avg = Math.round(records.reduce((a,r)=>a+r.accuracy,0)/records.length);
+          const late = records.some(r=>r.late);
+          const lastTs = records[records.length-1].timestamp||date;
+          html += `
+          <tr${late?' class="late-row"':''} style="border-top:1px solid #eee;">
+            <td style="text-align:center;"><input type="checkbox" class="del-assignment" data-student="${s}" data-date="${date}" /></td>
+            <td>${s}</td><td>${date}</td><td>${lastTs.startsWith(date)?'YES':lastTs}</td><td>${avg}%</td>
+          </tr>`;
+        });
       });
-      saveProgress(p);
-      renderTeacher(t);
-    };
 
-    // ─── Select-All checkbox ───
-    const selectAll = document.createElement('input');
-    selectAll.type = 'checkbox';
-    selectAll.onchange = e => {
-      const checked = e.target.checked;
-      document.querySelectorAll(`.del-assignment`).forEach(cb => {
-        cb.checked = checked;
-      });
-    };
-    const th = document.querySelectorAll('.class-card table thead tr')[document.querySelectorAll('.class-card').length - 1].children[0];
-    th.appendChild(selectAll);
+      html += `</table></div>`;
+    });
 
-    // ─── Persist allow-past / allow-future ───
-    document.querySelector(`.allow-past[data-code="${code}"]`).onchange = e => {
-      const all = getClasses();
-      all[code].allowPast = e.target.checked;
-      saveClasses(all);
-    };
-    document.querySelector(`.allow-future[data-code="${code}"]`).onchange = e => {
-      const all = getClasses();
-      all[code].allowFuture = e.target.checked;
-      saveClasses(all);
-    };
-  });
-}
+    container.innerHTML = html;
+
+    // ─── Wire up all buttons ───
+    (usersData[t].classrooms||[]).forEach(code => {
+      // Customize
+      document.querySelector(`.custom-btn[data-code="${code}"]`).onclick = ()=> openEditor(t,code);
+      // Bulk
+      document.querySelector(`.bulk-btn[data-code="${code}"]`).onclick   = ()=> openBulk(t,code);
+      document.getElementById(`bulk-file-${code}`).onchange            = e=> handleBulkUpload(e,code);
+      // Delete‐checked
+      document.getElementById(`delete-selected-${code}`).onclick       = () => {
+        const boxes = [...document.querySelectorAll('.del-assignment:checked')];
+        if (!boxes.length) { alert('No assignments checked.'); return; }
+        if (!confirm(`Delete ${boxes.length} record(s)?`)) return;
+        boxes.forEach(cb=>{
+          const s = cb.dataset.student, d = cb.dataset.date;
+          usersData[s].progress[d] = usersData[s].progress[d].filter(r=>r.date!==d);
+          if (!usersData[s].progress[d].length) delete usersData[s].progress[d];
+        });
+        saveUsers(usersData);
+        renderTeacher(t);
+      };
+      // Select-all
+      document.getElementById(`select-all-${code}`).onchange = e => {
+        const ch = e.target.checked;
+        document.querySelectorAll('.del-assignment').forEach(cb=>cb.checked=ch);
+      };
+      // Edit class
+      document.querySelector(`.edit-class[data-code="${code}"]`).onclick = ()=>{
+        const cls = clsData[code];
+        const student = prompt(`DELETE STUDENT:\n${cls.students.join('\n')}\n\nExact name to remove?`);
+        if (!student) return;
+        if (!cls.students.includes(student)) return alert('Not in this class.');
+        if (!confirm(`Delete ${student}?`)) return;
+        cls.students = cls.students.filter(s=>s!==student);
+        const us = getUsers(); delete us[student];
+        saveUsers(us); saveClasses(clsData);
+        renderTeacher(t);
+      };
+      // Cancel editor
+      document.getElementById(`cancel-${code}`).onclick = ()=> {
+        document.getElementById(`editor-${code}`).style.display = 'none';
+      };
+      // Save editor
+      document.getElementById(`save-${code}`).onclick = ()=> {
+        const d     = document.getElementById(`date-${code}`).value;
+        const lines = document.getElementById(`ta-${code}`).value
+                         .split('\n').map(l=>l.trim()).filter(Boolean);
+        const all   = document.getElementById(`all-${code}`).checked;
+        const classes = getClasses();
+        if (all) {
+          getUsers()[t].classrooms.forEach(cid=>{
+            classes[cid].customDrills = classes[cid].customDrills||{};
+            classes[cid].customDrills[d]=lines;
+          });
+        } else {
+          classes[code].customDrills = classes[code].customDrills||{};
+          classes[code].customDrills[d]=lines;
+        }
+        saveClasses(classes);
+        renderTeacher(t);
+      };
+    });
+  }
 
   // ─── Admin ───
   function enterAdmin(){
@@ -586,10 +573,6 @@ function renderTeacher(t) {
   }
 
 } // end initApp
-
-
-
-
 
 
 

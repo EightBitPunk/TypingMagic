@@ -1,4 +1,4 @@
-// Version 0.1.61
+// Version 0.1.65
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.61';
+  badge.textContent = 'version 0.1.65';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -390,7 +390,7 @@ function initApp() {
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5em;">
           <div>
             <strong>${c.name}</strong> (Code: ${code})
-            <button class="btn secondary" id="delete-selected-${code}">DELETE CHECKED ASSIGNMENTS</button>
+            <button class="btn secondary" id="delete-selected-${code}">DELETE SELECTED ASSIGNMENTS</button>
           </div>
           <div>
             <button class="custom-btn" data-code="${code}">Customize Drills</button>
@@ -440,19 +440,40 @@ function initApp() {
       // Bulk
       document.querySelector(`.bulk-btn[data-code="${code}"]`).onclick   = ()=> openBulk(t,code);
       document.getElementById(`bulk-file-${code}`).onchange            = e=> handleBulkUpload(e,code);
-      // Delete‐checked
-      document.getElementById(`delete-selected-${code}`).onclick       = () => {
-        const boxes = [...document.querySelectorAll('.del-assignment:checked')];
-        if (!boxes.length) { alert('No assignments checked.'); return; }
-        if (!confirm(`Delete ${boxes.length} record(s)?`)) return;
-        boxes.forEach(cb=>{
-          const s = cb.dataset.student, d = cb.dataset.date;
-          usersData[s].progress[d] = usersData[s].progress[d].filter(r=>r.date!==d);
-          if (!usersData[s].progress[d].length) delete usersData[s].progress[d];
-        });
-        saveUsers(usersData);
-        renderTeacher(t);
-      };
+
+      // Delete‐checked START
+  document.getElementById(`delete-selected-${code}`).onclick = () => {
+
+    const boxes = Array.from(
+      document.querySelectorAll('.del-assignment:checked')
+    );
+    if (!boxes.length) {
+      return alert('No assignments selected.');
+    }
+
+    if (!confirm(`Delete ${boxes.length} assignment(s)?`)) {
+      return;
+    }
+
+    boxes.forEach(cb => {
+      const student = cb.dataset.student;
+     const date    = cb.dataset.date;
+      // filter out all records whose .date === date
+      usersData[student].progress[date] =
+        (usersData[student].progress[date] || [])
+          .filter(r => r.date !== date);
+
+      if (!usersData[student].progress[date].length) {
+        delete usersData[student].progress[date];
+      }
+    });
+
+    saveUsers(usersData);
+    renderTeacher(t);
+  };
+
+      // Delete‐checked END
+
       // Select-all
       document.getElementById(`select-all-${code}`).onchange = e => {
         const ch = e.target.checked;
@@ -569,5 +590,6 @@ function initApp() {
   }
 
 } // end initApp
+
 
 

@@ -1,4 +1,4 @@
-// Version 0.1.80
+// Version 0.1.81
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -7,9 +7,9 @@ window.addEventListener("DOMContentLoaded", () => {
 
 function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
-  const badge = document.createElement('div');
+  const badge = document.createElement('div');car
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.80';
+  badge.textContent = 'version 0.1.81';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -502,6 +502,14 @@ function renderTeacher(t) {
     card.querySelector(`.custom-btn[data-code="${code}"]`)  
          .onclick = () => openEditor(t, code);
 
+const di = card.querySelector(`#date-${code}`);
+const ta = card.querySelector(`#ta-${code}`);
+di.onchange = () => {
+  const cls = getClasses()[code];
+  const drills = cls.customDrills[di.value] || cls.drills;
+  ta.value = drills.join('\n');
+};
+
     card.querySelector(`#cancel-${code}`)
         .onclick = () => editor.style.display = 'none';
     card.querySelector(`#save-${code}`)
@@ -652,6 +660,7 @@ function renderTeacher(t) {
   }
 
 } // end initApp
+
 
 
 

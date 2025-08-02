@@ -1,4 +1,4 @@
-// Version 0.1.66
+// Version 0.1.67
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.66';
+  badge.textContent = 'version 0.1.67';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -469,30 +469,28 @@ function renderTeacher(t) {
       e => handleBulkUpload(e, code);
 
     // DELETE SELECTED ASSIGNMENTS
-    document.getElementById(`delete-selected-${code}`).onclick = () => {
-      const boxes = Array.from(
-        document.querySelectorAll('.del-assignment:checked')
-      );
-      if (!boxes.length) {
-        alert('No assignments selected.');
-        return;
-      }
-      if (!confirm(`Delete ${boxes.length} assignment(s)?`)) return;
+// DELETE SELECTED ASSIGNMENTS
+document.getElementById(`delete-selected-${code}`).onclick = () => {
+  const boxes = Array.from(
+    document.querySelectorAll('.del-assignment:checked')
+  );
+  if (!boxes.length) {
+    alert('No assignments selected.');
+    return;
+  }
+  if (!confirm(`Delete ${boxes.length} assignment(s)?`)) return;
 
-      boxes.forEach(cb => {
-        const student = cb.dataset.student;
-        const date    = cb.dataset.date;
-        usersData[student].progress[date] =
-          (usersData[student].progress[date] || [])
-            .filter(r => r.date !== date);
-        if (!usersData[student].progress[date].length) {
-          delete usersData[student].progress[date];
-        }
-      });
+  boxes.forEach(cb => {
+    const student = cb.dataset.student;
+    const date    = cb.dataset.date;
+    // remove the entire date entry:
+    delete usersData[student].progress[date];
+  });
 
-      saveUsers(usersData);
-      renderTeacher(t);
-    };
+  // persist and re-render
+  saveUsers(usersData);
+  renderTeacher(t);
+};
 
     // Select‐All master checkbox
     document.getElementById(`select-all-${code}`).onchange = e => {
@@ -621,6 +619,7 @@ function renderTeacher(t) {
   }
 
 } // end initApp
+
 
 
 

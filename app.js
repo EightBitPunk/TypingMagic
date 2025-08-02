@@ -1,4 +1,4 @@
-// Version 0.1.60
+// Version 0.1.62
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.60';
+  badge.textContent = 'version 0.1.62';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -160,7 +160,7 @@ function initApp() {
     const users = getUsers();
     users[teacherName.textContent].classrooms.push(newCode);
     saveUsers(users);
-    codeDisp.textContent = `New Code: ${newCode}`;
+    codeDisp.textContent = New Code: ${newCode};
     renderTeacher(teacherName.textContent);
   };
 
@@ -169,16 +169,16 @@ function initApp() {
 
   function openEditor(user, code) {
     const classes = getClasses()[code];
-    const di  = document.getElementById(`date-${code}`);
-    const ta  = document.getElementById(`ta-${code}`);
-    const ed  = document.getElementById(`editor-${code}`);
+    const di  = document.getElementById(date-${code});
+    const ta  = document.getElementById(ta-${code});
+    const ed  = document.getElementById(editor-${code});
     if (!di.value) di.value = new Date().toISOString().split('T')[0];
     ta.value = (classes.customDrills[di.value]||classes.drills).join('\n');
-    document.getElementById(`all-${code}`).checked = false;
+    document.getElementById(all-${code}).checked = false;
     ed.style.display = 'block';
   }
   function openBulk(user, code) {
-    const inp = document.getElementById(`bulk-file-${code}`);
+    const inp = document.getElementById(bulk-file-${code});
     inp.classList.remove('hidden');
     inp.click();
   }
@@ -237,11 +237,11 @@ function initApp() {
     ];
     const hdr = document.createElement('div');
     hdr.style = "display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;";
-    hdr.innerHTML = `
+    hdr.innerHTML = 
       <button id="prev-month">&lt; Prev</button>
       <strong>${monthNames[calMonth]} ${calYear}</strong>
       <button id="next-month">Next &gt;</button>
-    `;
+    ;
     container.appendChild(hdr);
 
     // Build the days‐of‐week row
@@ -281,7 +281,7 @@ function initApp() {
       td.style.textAlign = 'center';
       td.style.cursor = 'pointer';
 
-      const key = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const key = ${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')};
       if (prog[key]) {
         td.style.background = 'lightgreen';
         td.onclick = () => alert("You've already completed this drill.");
@@ -317,18 +317,22 @@ function initApp() {
   function handlePast(code,key,student){
     const cls = getClasses()[code];
     const drills = cls.customDrills[key]||cls.drills;
-    if(!confirm(`Preview for ${key}?\n\n${drills.join('\n')}\n\nProceed?`)) return;
+    if(!confirm(Preview for ${key}?\n\n${drills.join('\n')}\n\nProceed?)) return;
     renderDrillsWithDate(code, drills, key, student, true);
   }
-  function renderDrillsWithDate(code, drills, dateKey, student, isLate){
-    let idx=0,pos=0;
-    const stats=document.getElementById('student-stats');
-    stats.textContent='';
-    function updateAcc(){
-      const spans=[...document.querySelectorAll('.char')];
-      const errs=spans.filter(s=>s.classList.contains('error')).length;
-      stats.textContent=`Accuracy: ${Math.round((spans.length-errs)/spans.length*100)}%`;
-    }
+
+ function renderDrillsWithDate(code, drills, dateKey, student, isLate) {
+   let idx=0, pos=0;
+   const accuracyDiv = document.getElementById('student-accuracy');
+  accuracyDiv.textContent = '';
+
+   function updateAcc(){
+     const spans = document.querySelectorAll('.char');
+     const errs = [...spans].filter(s => s.classList.contains('error')).length;
+     const pct  = Math.max(0, Math.round((spans.length-errs)/spans.length*100));
+     accuracyDiv.textContent = Accuracy: ${pct}%;
+   }
+
     function loadOne(){
       promptEl.innerHTML='';
       drills[idx].split('').forEach(ch=>{
@@ -352,7 +356,7 @@ function initApp() {
       const spans=document.querySelectorAll('.char');
       spans[pos].classList.remove('current');
       if(e.key===drills[idx][pos]) spans[pos].classList.add('correct');
-      else { spans[pos].classList.add('error'); feedbackEl.textContent=`Expected "${drills[idx][pos]}" got "${e.key}"`; }
+      else { spans[pos].classList.add('error'); feedbackEl.textContent=Expected "${drills[idx][pos]}" got "${e.key}"; }
       pos++; mark(); updateAcc(); if(pos>=spans.length) nextBtn.disabled=false;
     };
     nextBtn.onclick=()=>{
@@ -385,7 +389,7 @@ function initApp() {
       const c = clsData[code];
       if (!c) return;
 
-      html += `
+      html += 
       <div style="margin-bottom:1.5em;padding:1em;border:1px solid #ccc;border-radius:4px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5em;">
           <div>
@@ -412,7 +416,7 @@ function initApp() {
           <tr>
             <th><input type="checkbox" id="select-all-${code}" /></th>
             <th>Student</th><th>Assignment Date</th><th>Completed Same Day?</th><th>Accuracy</th>
-          </tr>`;
+          </tr>;
 
       c.students.forEach(s => {
         const prog = usersData[s].progress||{};
@@ -420,15 +424,15 @@ function initApp() {
           const avg = Math.round(records.reduce((a,r)=>a+r.accuracy,0)/records.length);
           const late = records.some(r=>r.late);
           const lastTs = records[records.length-1].timestamp||date;
-          html += `
+          html += 
           <tr${late?' class="late-row"':''} style="border-top:1px solid #eee;">
             <td style="text-align:center;"><input type="checkbox" class="del-assignment" data-student="${s}" data-date="${date}" /></td>
             <td>${s}</td><td>${date}</td><td>${lastTs.startsWith(date)?'YES':lastTs}</td><td>${avg}%</td>
-          </tr>`;
+          </tr>;
         });
       });
 
-      html += `</table></div>`;
+      html += </table></div>;
     });
 
     container.innerHTML = html;
@@ -436,15 +440,15 @@ function initApp() {
     // ─── Wire up all buttons ───
     (usersData[t].classrooms||[]).forEach(code => {
       // Customize
-      document.querySelector(`.custom-btn[data-code="${code}"]`).onclick = ()=> openEditor(t,code);
+      document.querySelector(.custom-btn[data-code="${code}"]).onclick = ()=> openEditor(t,code);
       // Bulk
-      document.querySelector(`.bulk-btn[data-code="${code}"]`).onclick   = ()=> openBulk(t,code);
-      document.getElementById(`bulk-file-${code}`).onchange            = e=> handleBulkUpload(e,code);
+      document.querySelector(.bulk-btn[data-code="${code}"]).onclick   = ()=> openBulk(t,code);
+      document.getElementById(bulk-file-${code}).onchange            = e=> handleBulkUpload(e,code);
       // Delete‐checked
-      document.getElementById(`delete-selected-${code}`).onclick       = () => {
+      document.getElementById(delete-selected-${code}).onclick       = () => {
         const boxes = [...document.querySelectorAll('.del-assignment:checked')];
         if (!boxes.length) { alert('No assignments checked.'); return; }
-        if (!confirm(`Delete ${boxes.length} record(s)?`)) return;
+        if (!confirm(Delete ${boxes.length} record(s)?)) return;
         boxes.forEach(cb=>{
           const s = cb.dataset.student, d = cb.dataset.date;
           usersData[s].progress[d] = usersData[s].progress[d].filter(r=>r.date!==d);
@@ -454,32 +458,32 @@ function initApp() {
         renderTeacher(t);
       };
       // Select-all
-      document.getElementById(`select-all-${code}`).onchange = e => {
+      document.getElementById(select-all-${code}).onchange = e => {
         const ch = e.target.checked;
         document.querySelectorAll('.del-assignment').forEach(cb=>cb.checked=ch);
       };
       // Edit class
-      document.querySelector(`.edit-class[data-code="${code}"]`).onclick = ()=>{
+      document.querySelector(.edit-class[data-code="${code}"]).onclick = ()=>{
         const cls = clsData[code];
-        const student = prompt(`DELETE STUDENT:\n${cls.students.join('\n')}\n\nExact name to remove?`);
+        const student = prompt(DELETE STUDENT:\n${cls.students.join('\n')}\n\nExact name to remove?);
         if (!student) return;
         if (!cls.students.includes(student)) return alert('Not in this class.');
-        if (!confirm(`Delete ${student}?`)) return;
+        if (!confirm(Delete ${student}?)) return;
         cls.students = cls.students.filter(s=>s!==student);
         const us = getUsers(); delete us[student];
         saveUsers(us); saveClasses(clsData);
         renderTeacher(t);
       };
       // Cancel editor
-      document.getElementById(`cancel-${code}`).onclick = ()=> {
-        document.getElementById(`editor-${code}`).style.display = 'none';
+      document.getElementById(cancel-${code}).onclick = ()=> {
+        document.getElementById(editor-${code}).style.display = 'none';
       };
       // Save editor
-      document.getElementById(`save-${code}`).onclick = ()=> {
-        const d     = document.getElementById(`date-${code}`).value;
-        const lines = document.getElementById(`ta-${code}`).value
+      document.getElementById(save-${code}).onclick = ()=> {
+        const d     = document.getElementById(date-${code}).value;
+        const lines = document.getElementById(ta-${code}).value
                          .split('\n').map(l=>l.trim()).filter(Boolean);
-        const all   = document.getElementById(`all-${code}`).checked;
+        const all   = document.getElementById(all-${code}).checked;
         const classes = getClasses();
         if (all) {
           getUsers()[t].classrooms.forEach(cid=>{
@@ -503,14 +507,14 @@ function initApp() {
     if(existing) existing.remove();
     const panel = document.createElement('div');
     panel.id='admin'; panel.style.padding='1em';
-    panel.innerHTML = `
+    panel.innerHTML = 
       <h2>Admin Panel</h2>
       <button id="cleanup-students">Delete orphan students</button>
       <button id="cleanup-teachers">Delete orphan teachers</button>
       <table border="1" style="width:100%;margin-top:1em;">
         <tr><th>User</th><th>Role</th><th>Info</th><th>Action</th></tr>
         <tbody id="admin-body"></tbody>
-      </table>`;
+      </table>;
     document.body.appendChild(panel);
 
     const users   = getUsers();
@@ -521,17 +525,17 @@ function initApp() {
 
     Object.entries(users).forEach(([u,d])=>{
       let info = d.role==='teacher' ? (d.classrooms||[]).join(', ') : d.classroomCode||'';
-      if (d.role==='student' && !valid.has(d.classroomCode)) info = `<span style="color:red">${info||'none'}</span>`;
+      if (d.role==='student' && !valid.has(d.classroomCode)) info = <span style="color:red">${info||'none'}</span>;
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${u}</td><td>${d.role}</td><td>${info}</td>
-                      <td><button data-user="${u}" class="del-user">Delete</button></td>`;
+      tr.innerHTML = <td>${u}</td><td>${d.role}</td><td>${info}</td>
+                      <td><button data-user="${u}" class="del-user">Delete</button></td>;
       body.appendChild(tr);
     });
 
     document.querySelectorAll('.del-user').forEach(b=>{
       b.onclick = ()=>{
         const u=b.dataset.user;
-        if(!confirm(`Delete ${u}?`)) return;
+        if(!confirm(Delete ${u}?)) return;
         deleteUser(u);
         enterAdmin();
       };
@@ -569,3 +573,4 @@ function initApp() {
   }
 
 } // end initApp
+

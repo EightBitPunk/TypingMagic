@@ -1,4 +1,4 @@
-// Version 0.1.71
+// Version 0.1.71_B
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.71';
+  badge.textContent = 'version 0.1.71.B';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -379,144 +379,174 @@ function loadDrills(code, student) {
 
 // ─── StartTeacherView  ───
 
+// ─── StartTeacherView  ───
 function renderTeacher(t) {
   const usersData = getUsers();
   const clsData   = getClasses();
   const container = document.getElementById('student-progress-table');
 
-  // build HTML
-  let html = '';
-  (usersData[t].classrooms || []).forEach(code => {
-    const c = clsData[code] || {};
-    // ensure defaults exist
+  // Clear
+  container.innerHTML = '';
+
+  usersData[t].classrooms.forEach(code => {
+    const c = clsData[code];
+    if (!c) return;
+
+    // Ensure defaults
     c.allowPast   = c.allowPast   === true;
     c.allowFuture = c.allowFuture === true;
 
-    html += `
-      <div style="margin-bottom:1.5em;padding:1em;border:1px solid #ccc;border-radius:4px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5em;">
-          <div>
-            <strong>${c.name}</strong> (Code: ${code})
-            <button class="btn secondary" id="delete-selected-${code}">
-              DELETE SELECTED ASSIGNMENTS
-            </button>
-          </div>
-          <div>
-            <button class="custom-btn" data-code="${code}">Customize Drills</button>
-            <button class="bulk-btn"   data-code="${code}">Bulk Upload</button>
-            <button class="btn primary edit-class" data-code="${code}">EDIT CLASS</button>
-            <br/><br/>
-            <label style="font-size:0.85em;">
-              <input type="checkbox"
-                     class="allow-past"
-                     data-code="${code}"
-                     ${c.allowPast ? 'checked' : ''} />
-              Students can complete <strong>past</strong> lessons
-            </label>
-            <br/>
-            <label style="font-size:0.85em;">
-              <input type="checkbox"
-                     class="allow-future"
-                     data-code="${code}"
-                     ${c.allowFuture ? 'checked' : ''} />
-              Students can complete <strong>future</strong> lessons
-            </label>
-          </div>
-        </div>
+    // Build card
+    const card = document.createElement('div');
+    card.style = 'margin-bottom:1.5em;padding:1em;border:1px solid #ccc;border-radius:4px;';
 
-        <input type="file" id="bulk-file-${code}" accept=".txt" class="hidden" />
+    // Header row
+    const header = document.createElement('div');
+    header.style = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5em;';
+    header.innerHTML = `
+      <div>
+        <strong>${c.name}</strong> (Code: ${code})
+        <button class="btn secondary" id="delete-selected-${code}">
+          DELETE SELECTED ASSIGNMENTS
+        </button>
+      </div>
+      <div>
+        <button class="custom-btn" data-code="${code}">Customize Drills</button>
+        <button class="bulk-btn"   data-code="${code}">Bulk Upload</button>
+        <button class="btn primary edit-class" data-code="${code}">EDIT CLASS</button>
+      </div>
+    `;
+    card.appendChild(header);
 
-        <div id="editor-${code}" style="display:none;margin-bottom:1em;">
-          <label>Date: <input type="date" id="date-${code}" /></label>
-          <label><input type="checkbox" id="all-${code}" /> All Classes</label><br>
-          <textarea id="ta-${code}" rows="4" style="width:100%;margin-top:.5em;"></textarea><br>
-          <button id="save-${code}" class="btn primary">Save</button>
-          <button id="cancel-${code}" class="btn secondary">Cancel</button>
-        </div>
+    // EDIT-CLASS dropdown container (initially hidden)
+    const editMenu = document.createElement('div');
+    editMenu.id = `edit-menu-${code}`;
+    editMenu.style = 'display:none;margin:1em 0;padding:0.5em;border:1px solid #888;border-radius:4px;background:#fafafa;';
+    editMenu.innerHTML = `
+      <h4>Edit “${c.name}”</h4>
+      <label>
+        Students can complete past lessons:
+        <input type="checkbox" class="allow-past-edit" data-code="${code}"
+               ${c.allowPast   ? 'checked' : ''}/>
+      </label><br/>
+      <label>
+        Students can complete future lessons:
+        <input type="checkbox" class="allow-future-edit" data-code="${code}"
+               ${c.allowFuture ? 'checked' : ''}/>
+      </label><br/><br/>
+      <label>Delete a student:
+        <select id="delete-student-${code}">
+          <option value="">— select —</option>
+          ${ (c.students||[]).map(s=>`<option value="${s}">${s}</option>`).join('') }
+        </select>
+      </label>
+      <button class="btn danger" id="confirm-delete-student-${code}">DELETE STUDENT</button>
+      <button class="btn secondary" id="cancel-edit-${code}">CANCEL</button>
+    `;
+    card.appendChild(editMenu);
 
-        <table style="width:100%;border-collapse:collapse;">
-          <tr>
-            <th><input type="checkbox" id="select-all-${code}" /></th>
-            <th>Student</th><th>Assignment Date</th><th>Completed Same Day?</th><th>Accuracy</th>
-          </tr>`;
-
-    (c.students || []).forEach(s => {
-      const prog = (usersData[s] || {}).progress || {};
-      Object.entries(prog).forEach(([date, records]) => {
-        const avg     = Math.round(records.reduce((sum,r)=>sum+r.accuracy,0) / records.length);
-        const late    = records.some(r=>r.late);
-        const lastTs  = records[records.length-1].timestamp || date;
-        const sameDay = lastTs.startsWith(date) ? 'YES' : lastTs;
-        html += `
-          <tr${late ? ' class="late-row"' : ''} style="border-top:1px solid #eee;">
-            <td style="text-align:center;">
-              <input type="checkbox" class="del-assignment"
-                     data-student="${s}" data-date="${date}" />
-            </td>
-            <td>${s}</td>
-            <td>${date}</td>
-            <td>${sameDay}</td>
-            <td>${avg}%</td>
-          </tr>`;
+    // Table of assignments
+    const tbl = document.createElement('table');
+    tbl.style = 'width:100%;border-collapse:collapse;';
+    tbl.innerHTML = `
+      <tr>
+        <th><input type="checkbox" id="select-all-${code}" /></th>
+        <th>Student</th><th>Date</th><th>Same Day?</th><th>Accuracy</th>
+      </tr>
+    `;
+    (c.students||[]).forEach(s => {
+      const prog = (usersData[s].progress)||{};
+      Object.entries(prog).forEach(([date,records])=>{
+        const avg = Math.round(records.reduce((a,r)=>a+r.accuracy,0)/records.length);
+        const late = records.some(r=>r.late);
+        const last = records[records.length-1].timestamp||date;
+        const same = last.startsWith(date)?'YES':last;
+        const row = document.createElement('tr');
+        if (late) row.classList.add('late-row');
+        row.style.borderTop = '1px solid #eee';
+        row.innerHTML = `
+          <td style="text-align:center;">
+            <input type="checkbox" class="del-assignment"
+                   data-student="${s}" data-date="${date}" />
+          </td>
+          <td>${s}</td>
+          <td>${date}</td>
+          <td>${same}</td>
+          <td>${avg}%</td>
+        `;
+        tbl.appendChild(row);
       });
     });
+    card.appendChild(tbl);
 
-    html += `
-        </table>
-      </div>`;
-  });
+    container.appendChild(card);
 
-  container.innerHTML = html;
+    // ——— WIRE UP BUTTONS ———
 
-  // wire up handlers
-  (usersData[t].classrooms || []).forEach(code => {
-    // Persist allowPast / allowFuture
-    document.querySelector(`.allow-past[data-code="${code}"]`)
-      .onchange = e => {
-        const all = getClasses();
-        all[code].allowPast = e.target.checked;
-        saveClasses(all);
-      };
-    document.querySelector(`.allow-future[data-code="${code}"]`)
-      .onchange = e => {
-        const all = getClasses();
-        all[code].allowFuture = e.target.checked;
-        saveClasses(all);
-      };
+    // Delete selected
+    document.getElementById(`delete-selected-${code}`).onclick = () => {
+      const boxes = Array.from(card.querySelectorAll('.del-assignment:checked'));
+      if (!boxes.length) return alert('No assignments selected.');
+      if (!confirm(`Delete ${boxes.length} assignment(s)?`)) return;
+      boxes.forEach(cb => {
+        const s = cb.dataset.student, d = cb.dataset.date;
+        usersData[s].progress[d] = usersData[s].progress[d].filter(r=>r.date!==d);
+        if (!usersData[s].progress[d].length) delete usersData[s].progress[d];
+      });
+      saveUsers(usersData);
+      renderTeacher(t);
+    };
 
-    // Customize Drills
-    document.querySelector(`.custom-btn[data-code="${code}"]`)
-      .onclick = () => openEditor(t, code);
+    // Select-all
+    document.getElementById(`select-all-${code}`).onchange = e => {
+      card.querySelectorAll('.del-assignment').forEach(cb=>cb.checked = e.target.checked);
+    };
 
-    // Bulk Upload
-    document.querySelector(`.bulk-btn[data-code="${code}"]`)
-      .onclick = () => openBulk(t, code);
+    // Customize & Bulk
+    card.querySelector(`.custom-btn[data-code="${code}"]`)
+        .onclick = () => openEditor(t, code);
+    card.querySelector(`.bulk-btn[data-code="${code}"]`)
+        .onclick = () => openBulk(t, code);
     document.getElementById(`bulk-file-${code}`)
-      .onchange = e => handleBulkUpload(e, code);
+        .onchange = e => handleBulkUpload(e, code);
 
-    // DELETE SELECTED ASSIGNMENTS
-    document.getElementById(`delete-selected-${code}`)
-      .onclick = () => { /*…your existing delete logic…*/ };
+    // EDIT-CLASS toggle menu
+    const editBtn = card.querySelector(`.edit-class[data-code="${code}"]`);
+    editBtn.onclick = () => {
+      editMenu.style.display = editMenu.style.display === 'none' ? 'block' : 'none';
+    };
+    // cancel
+    editMenu.querySelector(`#cancel-edit-${code}`)
+      .onclick = () => editMenu.style.display = 'none';
 
-    // Select‐All master checkbox
-    document.getElementById(`select-all-${code}`)
+    // Persist allowPast/Future from within EDIT-CLASS menu
+    editMenu.querySelector(`.allow-past-edit[data-code="${code}"]`)
       .onchange = e => {
-        document.querySelectorAll('.del-assignment')
-                .forEach(cb => cb.checked = e.target.checked);
+        c.allowPast = e.target.checked;
+        saveClasses(clsData);
+      };
+    editMenu.querySelector(`.allow-future-edit[data-code="${code}"]`)
+      .onchange = e => {
+        c.allowFuture = e.target.checked;
+        saveClasses(clsData);
       };
 
-    // EDIT CLASS (remove student)
-    document.querySelector(`.edit-class[data-code="${code}"]`)
-      .onclick = () => { /*…your existing edit‐class logic…*/ };
-
-    // Cancel & Save in drill-editor
-    document.getElementById(`cancel-${code}`)
-      .onclick = () => document.getElementById(`editor-${code}`).style.display = 'none';
-    document.getElementById(`save-${code}`)
-      .onclick = () => { /*…your existing save-logic…*/ };
+    // DELETE STUDENT from dropdown
+    editMenu.querySelector(`#confirm-delete-student-${code}`)
+      .onclick = () => {
+        const sel = editMenu.querySelector(`#delete-student-${code}`);
+        const student = sel.value;
+        if (!student) return alert('Please select a student first.');
+        if (!confirm(`Permanently delete ${student}? This removes all their data.`)) return;
+        // remove student
+        c.students = c.students.filter(s=>s!==student);
+        delete usersData[student];
+        saveUsers(usersData);
+        saveClasses(clsData);
+        renderTeacher(t);
+      };
   });
 }
-
 // ─── end renderTeacher ───
 
   // ─── StartAdmin Admin ───
@@ -592,6 +622,7 @@ function renderTeacher(t) {
   }
 
 } // end initApp
+
 
 
 

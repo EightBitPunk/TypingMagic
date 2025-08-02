@@ -7,7 +7,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
 function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
-  const badge = document.createElement('div');car
+  const badge = document.createElement('div');
   badge.className = 'version-badge';
   badge.textContent = 'version 0.1.81';
   Object.assign(badge.style, {
@@ -660,6 +660,7 @@ di.onchange = () => {
   }
 
 } // end initApp
+
 
 
 

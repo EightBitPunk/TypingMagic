@@ -499,8 +499,9 @@ function renderTeacher(t) {
     fileInput.onchange = e => handleBulkUpload(e, code);
 
     // Customize Drills
-    card.querySelector(`.custom-btn[data-code="${code}"]`)
-        .onclick = () => editor.style.display = 'block';
+    card.querySelector(`.custom-btn[data-code="${code}"]`)  
+         .onclick = () => openEditor(t, code);
+
     card.querySelector(`#cancel-${code}`)
         .onclick = () => editor.style.display = 'none';
     card.querySelector(`#save-${code}`)
@@ -651,6 +652,7 @@ function renderTeacher(t) {
   }
 
 } // end initApp
+
 
 
 

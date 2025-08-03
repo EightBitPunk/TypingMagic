@@ -1,4 +1,4 @@
-// Version 0.1.82
+// Version 0.1.85_PreviewDevTest
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -9,7 +9,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.82';
+  badge.textContent = 'version 0.1.85_PreviewDevTest';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -32,6 +32,15 @@ function initApp() {
   const saveClasses= c  => localStorage.setItem('classrooms', JSON.stringify(c));
   const getCurrentUser = () =>
     JSON.parse(localStorage.getItem('currentUser') || 'null');
+
+  // ─── Today helper (local date) ───
+  function getToday() {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm   = String(d.getMonth()+1).padStart(2,'0');
+    const dd   = String(d.getDate()).padStart(2,'0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
 
     // ─── Calendar state for student view ───
   let calYear  = new Date().getFullYear();
@@ -172,7 +181,7 @@ function initApp() {
     const di  = document.getElementById(`date-${code}`);
     const ta  = document.getElementById(`ta-${code}`);
     const ed  = document.getElementById(`editor-${code}`);
-    if (!di.value) di.value = new Date().toISOString().split('T')[0];
+    if (!di.value) di.value = getToday();
     ta.value = (classes.customDrills[di.value]||classes.drills).join('\n');
     document.getElementById(`all-${code}`).checked = false;
     ed.style.display = 'block';
@@ -370,12 +379,12 @@ function initApp() {
     loadOne();
   }
   function loadDrills(code, student){
-    const today=new Date().toISOString().split('T')[0];
-    const cls=getClasses()[code];
-    renderDrillsWithDate(code, cls.customDrills[today]||cls.drills, today, student, false);
-  }
+  const today = getToday();
+   const cls   = getClasses()[code];
+  renderDrillsWithDate(code, cls.customDrills[today] || cls.drills,
+                       today, student, false);
+}
 
-  // ─── StartTeacherView  
   
 // ─── Start Teacher View ───
 function renderTeacher(t) {
@@ -686,6 +695,7 @@ function renderTeacher(t) {
   }
 
 } // end initApp
+
 
 
 

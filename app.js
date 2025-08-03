@@ -1,4 +1,4 @@
-// Version 0.1.91FB
+// Version 0.1.95
 
 const firebaseConfig = {
       apiKey: "AIzaSyBIMcBtlLhHhBaAnzSDQIp5S608lyEgo-o",
@@ -10,10 +10,9 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
 const app = firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 console.log("✅ Firebase initialized successfully!", app);
-
 
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
@@ -443,4 +442,5 @@ function initApp() {
     return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
   }
 }
+
 

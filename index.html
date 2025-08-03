@@ -1,4 +1,4 @@
-<!-- Version E.1.71, deleted extra link -->
+<!-- Version E.1.72, Firebase Auth integration enabled -->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -49,7 +49,6 @@
 
       <div id="teacher-classroom-view" class="card hidden">
         <h3>Classes &amp; Student Progress</h3>
-
         <div id="student-progress-table"></div>
       </div>
 
@@ -75,10 +74,8 @@
   </main>
 
   <button id="logout-btn" class="btn secondary" style="display:none;">Log Out</button>
-  <script src="app.js"></script>
+
+  <!-- Load app logic with Firebase Auth (using module) -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>
-
-
-
-

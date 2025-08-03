@@ -1,4 +1,13 @@
-// Version 0.1.95
+// Version 0.1.95B
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
 const firebaseConfig = {
       apiKey: "AIzaSyBIMcBtlLhHhBaAnzSDQIp5S608lyEgo-o",
@@ -23,7 +32,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.95_Firebase';
+  badge.textContent = 'version 0.1.95_Firebase_B';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -442,6 +451,7 @@ function initApp() {
     return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
   }
 }
+
 
 
 

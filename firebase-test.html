@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Firebase Test</title>
+</head>
+<body>
+  <h1>Firebase Connection Test</h1>
+  <p>If connected correctly, you’ll see a message in the browser console.</p>
+
+  <script type="module">
+    // Import Firebase functions
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBIMcBtlLhHhBaAnzSDQIp5S608lyEgo-o",
+      authDomain: "typingmastery-acf2f.firebaseapp.com",
+      projectId: "typingmastery-acf2f",
+      storageBucket: "typingmastery-acf2f.appspot.com",
+      messagingSenderId: "199688909073",
+      appId: "1:199688909073:web:689e8c7e8fa6167170dcb0"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    console.log("✅ Firebase initialized successfully!", app);
+  </script>
+</body>
+</html>

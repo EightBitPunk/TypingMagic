@@ -1,4 +1,4 @@
-// Version 0.1.95E
+// Version 0.1.96
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -8,7 +8,7 @@ import {
   signOut,
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
-// Firebase config (already tested and working)
+// ─── Firebase init ─────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyBIMcBtlLhHhBaAnzSDQIp5S608lyEgo-o",
   authDomain: "typingmastery-acf2f.firebaseapp.com",
@@ -17,42 +17,16 @@ const firebaseConfig = {
   messagingSenderId: "199688909073",
   appId: "1:199688909073:web:689e8c7e8fa6167170dcb0"
 };
-
-const app = initializeApp(firebaseConfig);
+const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 console.log("✅ Firebase initialized successfully!");
 
-window.addEventListener("DOMContentLoaded", () => {
-  showVersion();
-  initApp();
-});
-
-function initApp() {
-
-const usernameInput = document.getElementById("username");
-const passwordInput = document.getElementById("password");
-const roleSelect = document.getElementById("role");
-const classroomCodeInput = document.getElementById("classroom-code");
-const loginBtn = document.getElementById("login-btn");
-const toggleModeBtn = document.getElementById("toggle-mode-btn");
-const loginMessage = document.getElementById("login-message");
-const studentClassroomDiv = document.getElementById("student-classroom-code");
-
-let signUpMode = false;
-
-// Toggle between sign-up and login
-toggleModeBtn.onclick = () => {
-  signUpMode = !signUpMode;
-  toggleModeBtn.textContent = signUpMode ? "Back to Login" : "Sign Up";
-  loginBtn.textContent = signUpMode ? "Create Account" : "Log In";
-  loginMessage.textContent = "";
-};
-
+// ─── Show version badge ─────────────────
 function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.95_Firebase_E';
+  badge.textContent = 'version 0.1.96';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -62,111 +36,140 @@ function showVersion() {
   document.body.appendChild(badge);
 }
 
-// Show classroom code input if role is student
-roleSelect.onchange = () => {
-  studentClassroomDiv.classList.toggle("hidden", roleSelect.value !== "student");
-};
+// ─── Kick things off ────────────────────
+window.addEventListener("DOMContentLoaded", () => {
+  showVersion();
+  initApp();
+});
 
-loginBtn.onclick = async () => {
-  const email = usernameInput.value.trim();
-  const password = passwordInput.value;
-  const role = roleSelect.value;
-  const classroomCode = classroomCodeInput.value.trim();
+function initApp() {
+  // ─── Grab all the buttons & inputs ───
+  const usernameInput        = document.getElementById("username");
+  const passwordInput        = document.getElementById("password");
+  const roleSelect           = document.getElementById("role");
+  const classroomCodeInput   = document.getElementById("classroom-code");
+  const loginBtn             = document.getElementById("login-btn");
+  const toggleModeBtn        = document.getElementById("toggle-mode-btn");
+  const loginMessage         = document.getElementById("login-message");
+  const studentClassroomDiv  = document.getElementById("student-classroom-code");
+  const logoutBtn            = document.getElementById("logout-btn");
 
-  loginMessage.textContent = "";
-
-  if (!email || !password) {
-    loginMessage.textContent = "Please enter name and password.";
-    return;
+  // ─── Drill/calendar helpers ───────────
+  function getToday() {
+    const d  = new Date();
+    const yyyy = d.getFullYear();
+    const mm   = String(d.getMonth()+1).padStart(2,'0');
+    const dd   = String(d.getDate()).padStart(2,'0');
+    return `${yyyy}-${mm}-${dd}`;
   }
+  const getUsers    = () => JSON.parse(localStorage.getItem('users')    || '{}');
+  const saveUsers   = u  => localStorage.setItem('users', JSON.stringify(u));
+  const getClasses  = () => JSON.parse(localStorage.getItem('classrooms')|| '{}');
+  const saveClasses = c  => localStorage.setItem('classrooms', JSON.stringify(c));
+  let calYear  = new Date().getFullYear();
+  let calMonth = new Date().getMonth();
 
-  try {
-    let userCredential;
-    if (signUpMode) {
-      userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    } else {
-      userCredential = await signInWithEmailAndPassword(auth, email, password);
+  // ─── Sign-up vs Log-in toggle ─────────
+  let signUpMode = false;
+  toggleModeBtn.onclick = () => {
+    signUpMode = !signUpMode;
+    toggleModeBtn.textContent = signUpMode ? "Back to Login" : "Sign Up";
+    loginBtn.textContent      = signUpMode ? "Create Account" : "Log In";
+    loginMessage.textContent  = "";
+    studentClassroomDiv.classList.toggle("hidden", roleSelect.value !== "student");
+  };
+  roleSelect.onchange = () => {
+    studentClassroomDiv.classList.toggle("hidden", roleSelect.value !== "student");
+  };
+
+  // ─── Log-in / Sign-up handler ─────────
+  loginBtn.onclick = async () => {
+    const email    = usernameInput.value.trim();
+    const password = passwordInput.value;
+    const role     = roleSelect.value;
+    const code     = classroomCodeInput.value.trim();
+
+    loginMessage.textContent = "";
+    if (!email || !password || (signUpMode && role==='student' && !code)) {
+      loginMessage.textContent = "Complete all fields.";
+      return;
     }
 
-    const user = userCredential.user;
-    console.log("🔐 Firebase Auth success:", user);
+    try {
+      let cred;
+      if (signUpMode) {
+        cred = await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        cred = await signInWithEmailAndPassword(auth, email, password);
+      }
+      console.log("🔐 Firebase Auth success:", cred.user);
 
-    // Store name and role locally (Firebase doesn't store custom roles unless using Firestore)
-    const name = email.split("@")[0]; // temporary display name
-    if (role === "teacher") {
-      document.getElementById("teacher-name").textContent = name;
-      document.getElementById("login-screen").classList.add("hidden");
-      document.getElementById("teacher-dashboard").classList.remove("hidden");
-    } else if (role === "student") {
-      document.getElementById("student-name").textContent = name;
-      document.getElementById("login-screen").classList.add("hidden");
-      document.getElementById("student-dashboard").classList.remove("hidden");
+      // Temporary display name from email prefix
+      const name = email.split("@")[0];
+      if (role === "teacher") {
+        document.getElementById("teacher-name").textContent = name;
+        document.getElementById("login-screen").classList.add("hidden");
+        document.getElementById("teacher-dashboard").classList.remove("hidden");
+      } else {
+        document.getElementById("student-name").textContent = name;
+        document.getElementById("login-screen").classList.add("hidden");
+        document.getElementById("student-dashboard").classList.remove("hidden");
+      }
+      logoutBtn.style.display = "block";
+    } catch (err) {
+      console.error("❌ Auth error:", err);
+      loginMessage.textContent = err.message.replace("Firebase: ", "");
     }
+  };
 
-    document.getElementById("logout-btn").style.display = "block";
-  } catch (error) {
-    console.error("❌ Auth error:", error);
-    loginMessage.textContent = error.message.replace("Firebase: ", "");
-  }
-};
+  // ─── Log-out handler ───────────────────
+  logoutBtn.onclick = async () => {
+    await signOut(auth);
+    document.getElementById("login-screen").classList.remove("hidden");
+    document.getElementById("teacher-dashboard").classList.add("hidden");
+    document.getElementById("student-dashboard").classList.add("hidden");
+    logoutBtn.style.display = "none";
+  };
 
-// Log out
-document.getElementById("logout-btn").onclick = async () => {
-  await signOut(auth);
-  document.getElementById("login-screen").classList.remove("hidden");
-  document.getElementById("teacher-dashboard").classList.add("hidden");
-  document.getElementById("student-dashboard").classList.add("hidden");
-  document.getElementById("logout-btn").style.display = "none";
-};
-
-// Everything below this point is your original logic — unchanged!
-
-
-  // ─── Drill Editor & Bulk Upload ───
+  // ─── Drill Editor & Bulk Upload ───────
   function openEditor(user, code) {
-    const classes = getClasses()[code];
-    const di  = document.getElementById(`date-${code}`);
-    const ta  = document.getElementById(`ta-${code}`);
-    const ed  = document.getElementById(`editor-${code}`);
+    const cls = getClasses()[code];
+    const di = document.getElementById(`date-${code}`);
+    const ta = document.getElementById(`ta-${code}`);
+    const ed = document.getElementById(`editor-${code}`);
     if (!di.value) di.value = getToday();
-    ta.value = (classes.customDrills[di.value]||classes.drills).join('\n');
+    ta.value = (cls.customDrills[di.value]||cls.drills).join("\n");
     document.getElementById(`all-${code}`).checked = false;
-    ed.style.display = 'block';
+    ed.style.display = "block";
   }
   function openBulk(user, code) {
     const inp = document.getElementById(`bulk-file-${code}`);
-    inp.classList.remove('hidden');
+    inp.classList.remove("hidden");
     inp.click();
   }
   async function handleBulkUpload(evt, code) {
-    const file = evt.target.files[0]; if (!file) return;
-    const text = await file.text();
-    const ans  = prompt(
-      "Apply these drills to ALL of your classes?\n"+
-      "YES=All, NO=Only this class, CANCEL=Abort"
-    );
-    if (!ans) { evt.target.value=''; evt.target.classList.add('hidden'); return; }
-    const choice = ans.trim().toUpperCase();
-    if (choice!=='YES'&&choice!=='NO') return alert('Aborted.');
-    const applyAll = choice==='YES';
-    const classes = getClasses();
+    const text = await evt.target.files[0].text();
+    const choice = prompt("YES=All, NO=This class, CANCEL=Abort").trim().toUpperCase();
+    if (choice!=="YES" && choice!=="NO") return alert("Aborted.");
+    const cls = getClasses();
     text.split(/\r?\n/).filter(Boolean).forEach(line=>{
-      const datePart = line.split('[')[0].trim();
-      const drills   = Array.from(line.matchAll(/\[([^\]]+)\]/g))
-                        .map(m=>m[1].trim()).filter(Boolean);
-      if (!datePart||!drills.length) return;
-      if (applyAll) {
-        Object.values(classes).forEach(cl=>{
-          cl.customDrills[datePart] = drills;
-        });
-      } else {
-        classes[code].customDrills[datePart] = drills;
-      }
+      const date = line.split("[")[0].trim();
+      const drills = [...line.matchAll(/\[([^\]]+)\]/g)].map(m=>m[1].trim());
+      if (!date||!drills.length) return;
+      if (choice==="YES") Object.values(cls).forEach(c=>c.customDrills[date]=drills);
+      else                       cls[code].customDrills[date]=drills;
     });
-    saveClasses(classes);
-    alert('Bulk drills updated.');
-    evt.target.value=''; evt.target.classList.add('hidden');
+    saveClasses(cls);
+    alert("Bulk drills updated.");
+    evt.target.value = "";
+    evt.target.classList.add("hidden");
   }
+
+  // ─── Student Calendar & Drill Loader ───
+  function renderCalendar() { /* your calendar code here */ }
+  function loadDrillsForDate(d)  { /* your drill-load code here */ }
+  function renderStudent(code, user) { /* your student view code here */ }
+  function buildCalendar(student, code) { /* your buildCalendar code here */ }
 
   // ─── Teacher Dashboard Rendering ───
   function renderTeacher(u) {
@@ -339,6 +342,7 @@ document.getElementById("logout-btn").onclick = async () => {
     return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
   }
 }
+
 
 
 

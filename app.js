@@ -1,4 +1,4 @@
-// Version 0.1.98
+// Version 0.1.99
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -21,12 +21,35 @@ const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 console.log("✅ Firebase initialized successfully!");
 
+// 🔧 Handle localStorage user setup
+let users = getUsers();
+if (!users[email]) {
+  users[email] = {
+    role,
+    classrooms: role === "teacher" ? [] : undefined,
+    classroomCode: role === "student" ? code : undefined
+  };
+
+  // If student: attach to class
+  if (role === "student") {
+    const classes = getClasses();
+    if (!classes[code]) {
+      loginMessage.textContent = "Classroom code not found.";
+      return;
+    }
+    classes[code].students.push(email);
+    saveClasses(classes);
+  }
+
+  saveUsers(users);
+}
+
 // ─── Show version badge ─────────────────
 function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.98';
+  badge.textContent = 'version 0.1.99';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -80,6 +103,7 @@ function initApp() {
     signUpMode = !signUpMode;
     toggleModeBtn.textContent = signUpMode ? "Back to Login" : "Sign Up";
     loginBtn.textContent      = signUpMode ? "Create Account" : "Log In";
+    studentClassroomDiv.classList.toggle("hidden", roleSelect.value !== "student" || !signUpMode);
     loginMessage.textContent  = "";
     studentClassroomDiv.classList.toggle("hidden", roleSelect.value !== "student");
   };
@@ -111,15 +135,26 @@ function initApp() {
 
       // Temporary display name from email prefix
       const name = email.split("@")[0];
-      if (role === "teacher") {
-        document.getElementById("teacher-name").textContent = name;
-        document.getElementById("login-screen").classList.add("hidden");
-        document.getElementById("teacher-dashboard").classList.remove("hidden");
-      } else {
-        document.getElementById("student-name").textContent = name;
-        document.getElementById("login-screen").classList.add("hidden");
-        document.getElementById("student-dashboard").classList.remove("hidden");
-      }
+
+if (email === "magiccaloriecam@gmail.com") {
+  document.getElementById("login-screen").classList.add("hidden");
+  document.getElementById("admin-dashboard").classList.remove("hidden");
+  return;
+}
+if (role === "teacher") {
+  document.getElementById("teacher-name").textContent = email;
+  document.getElementById("login-screen").classList.add("hidden");
+  document.getElementById("teacher-dashboard").classList.remove("hidden");
+  renderTeacher(email);
+} else {
+  document.getElementById("student-name").textContent = email;
+  document.getElementById("login-screen").classList.add("hidden");
+  document.getElementById("student-dashboard").classList.remove("hidden");
+  renderStudent(code, email);
+}
+
+
+
       logoutBtn.style.display = "block";
     } catch (err) {
       console.error("❌ Auth error:", err);
@@ -334,6 +369,7 @@ function initApp() {
     return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
   }
 }
+
 
 
 

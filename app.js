@@ -775,6 +775,4 @@ function renderTeacher(t) {
     saveUsers(us);
   }
 
-} // end initApp
-
-
+// end initApp

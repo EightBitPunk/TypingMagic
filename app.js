@@ -1,4 +1,4 @@
-// Version 0.1.96
+// Version 0.1.97
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -26,7 +26,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.96';
+  badge.textContent = 'version 0.1.97';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -53,6 +53,10 @@ function initApp() {
   const loginMessage         = document.getElementById("login-message");
   const studentClassroomDiv  = document.getElementById("student-classroom-code");
   const logoutBtn            = document.getElementById("logout-btn");
+  // *** NEW: grab the Create Classroom button and the display area
+  const createBtn            = document.getElementById("create-classroom-btn");
+  const newClassInput        = document.getElementById("new-classroom-name");
+  const classCodeDisplay     = document.getElementById("classroom-code-display");
 
   // ─── Drill/calendar helpers ───────────
   function getToday() {
@@ -131,47 +135,34 @@ function initApp() {
     logoutBtn.style.display = "none";
   };
 
-  // ─── Drill Editor & Bulk Upload ───────
-  function openEditor(user, code) {
-    const cls = getClasses()[code];
-    const di = document.getElementById(`date-${code}`);
-    const ta = document.getElementById(`ta-${code}`);
-    const ed = document.getElementById(`editor-${code}`);
-    if (!di.value) di.value = getToday();
-    ta.value = (cls.customDrills[di.value]||cls.drills).join("\n");
-    document.getElementById(`all-${code}`).checked = false;
-    ed.style.display = "block";
-  }
-  function openBulk(user, code) {
-    const inp = document.getElementById(`bulk-file-${code}`);
-    inp.classList.remove("hidden");
-    inp.click();
-  }
-  async function handleBulkUpload(evt, code) {
-    const text = await evt.target.files[0].text();
-    const choice = prompt("YES=All, NO=This class, CANCEL=Abort").trim().toUpperCase();
-    if (choice!=="YES" && choice!=="NO") return alert("Aborted.");
-    const cls = getClasses();
-    text.split(/\r?\n/).filter(Boolean).forEach(line=>{
-      const date = line.split("[")[0].trim();
-      const drills = [...line.matchAll(/\[([^\]]+)\]/g)].map(m=>m[1].trim());
-      if (!date||!drills.length) return;
-      if (choice==="YES") Object.values(cls).forEach(c=>c.customDrills[date]=drills);
-      else                       cls[code].customDrills[date]=drills;
-    });
-    saveClasses(cls);
-    alert("Bulk drills updated.");
-    evt.target.value = "";
-    evt.target.classList.add("hidden");
-  }
-
-  // ─── Student Calendar & Drill Loader ───
-  function renderCalendar() { /* your calendar code here */ }
-  function loadDrillsForDate(d)  { /* your drill-load code here */ }
-  function renderStudent(code, user) { /* your student view code here */ }
-  function buildCalendar(student, code) { /* your buildCalendar code here */ }
+  // ─── CREATE CLASSROOM handler (restored!) ───
+  createBtn.onclick = () => {
+    const name = newClassInput.value.trim();
+    if (!name) return alert("Enter a class name.");
+    // generate a code
+    const newCode = "C" + (100000 + Math.floor(Math.random()*900000));
+    // persist
+    const classes = getClasses();
+    classes[newCode] = {
+      name,
+      teacher: document.getElementById("teacher-name").textContent,
+      students: [],
+      drills: [
+        'The quick brown fox jumps over the lazy dog.',
+        'Typing practice improves both speed and accuracy.',
+        'Accuracy over speed.'
+      ],
+      customDrills: {}
+    };
+    saveClasses(classes);
+    // show it
+    classCodeDisplay.textContent = "New Code: " + newCode;
+    // refresh the teacher view
+    renderTeacher(document.getElementById("teacher-name").textContent);
+  };
 
   // ─── Teacher Dashboard Rendering ───
+
   function renderTeacher(u) {
     const users = getUsers();
     const classes = getClasses();
@@ -342,6 +333,7 @@ function initApp() {
     return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
   }
 }
+
 
 
 

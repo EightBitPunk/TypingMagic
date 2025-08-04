@@ -1,4 +1,4 @@
-// Version 0.1.97
+// Version 0.1.98
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -26,7 +26,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.97';
+  badge.textContent = 'version 0.1.98';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -53,10 +53,11 @@ function initApp() {
   const loginMessage         = document.getElementById("login-message");
   const studentClassroomDiv  = document.getElementById("student-classroom-code");
   const logoutBtn            = document.getElementById("logout-btn");
-  // *** NEW: grab the Create Classroom button and the display area
   const createBtn            = document.getElementById("create-classroom-btn");
   const newClassInput        = document.getElementById("new-classroom-name");
   const classCodeDisplay     = document.getElementById("classroom-code-display");
+  const progTable            = document.getElementById("student-progress-table");
+  studentClassroomDiv.classList.add("hidden");
 
   // ─── Drill/calendar helpers ───────────
   function getToday() {
@@ -333,6 +334,7 @@ function initApp() {
     return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
   }
 }
+
 
 
 

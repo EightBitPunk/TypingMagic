@@ -1,4 +1,4 @@
-// Version 0.1.95D
+// Version 0.1.95E
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -21,6 +21,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 console.log("✅ Firebase initialized successfully!");
+
+window.addEventListener("DOMContentLoaded", () => {
+  showVersion();
+  initApp();
+});
 
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
@@ -45,7 +50,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.95_Firebase_D';
+  badge.textContent = 'version 0.1.95_Firebase_E';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -332,6 +337,7 @@ document.getElementById("logout-btn").onclick = async () => {
     return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
   }
 }
+
 
 
 

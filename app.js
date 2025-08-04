@@ -133,18 +133,60 @@ function initApp() {
     location.reload();
   };
 
-  loginBtn.onclick = () => {
-    loginMsg.textContent = '';
-    const u = userIn.value.trim(),
-          p = passIn.value,
-          r = roleSel.value,
-          c = classIn.value.trim();
+  loginBtn.onclick = async () => {
+    loginMsg.textContent = "";
 
-    if (u==='KEFKA' && p==='SUCKS') return enterAdmin();
+    const email = userIn.value.trim();
+    const password = passIn.value;
+    const role = roleSel.value;
+    const code = classIn.value.trim();
 
-    if (!u || !p || (isSignUp && r==='student' && !c)) {
-      loginMsg.textContent = 'Complete all fields.'; return;
+    // Basic front‐end check:
+    if (!email || !password || (signUpMode && role==="student" && !code)) {
+      loginMsg.textContent = "Complete all fields.";
+      return;
     }
+
+    try {
+      let cred;
+      if (signUpMode) {
+        // Create in Firebase:
+        cred = await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        // Sign in via Firebase:
+        cred = await signInWithEmailAndPassword(auth, email, password);
+      }
+      console.log("🔐 Firebase Auth success:", cred.user);
+
+      // Mirror them into localStorage so your old dashboards/data code still works:
+      if (!setupUserInLocalStorage(email, role, code)) {
+        // e.g. bad classroom code for student
+        return;
+      }
+
+      // Now show the correct view:
+      if (email === "magiccaloriecam@gmail.com") {
+        document.getElementById("login-screen").classList.add("hidden");
+        document.getElementById("admin-dashboard").classList.remove("hidden");
+      }
+      else if (role === "teacher") {
+        document.getElementById("teacher-name").textContent = email;
+        document.getElementById("login-screen").classList.add("hidden");
+        document.getElementById("teacher-dashboard").classList.remove("hidden");
+        renderTeacher(email);
+      } else {
+        document.getElementById("student-name").textContent = email;
+        document.getElementById("login-screen").classList.add("hidden");
+        document.getElementById("student-dashboard").classList.remove("hidden");
+        renderStudent(code, email);
+      }
+
+      logoutBtn.style.display = "block";
+    } catch (err) {
+      console.error("❌ Auth error:", err);
+      loginMsg.textContent = err.message.replace("Firebase: ", "");
+    }
+  };
 
     const users = getUsers();
     if (isSignUp) {
@@ -734,3 +776,4 @@ function renderTeacher(t) {
   }
 
 } // end initApp
+

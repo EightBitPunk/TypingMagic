@@ -1,4 +1,4 @@
-// Version 0.1.99
+// Version 0.2.01
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -22,26 +22,28 @@ const auth = getAuth(app);
 console.log("✅ Firebase initialized successfully!");
 
 // 🔧 Handle localStorage user setup
-let users = getUsers();
-if (!users[email]) {
-  users[email] = {
-    role,
-    classrooms: role === "teacher" ? [] : undefined,
-    classroomCode: role === "student" ? code : undefined
-  };
+function setupUserInLocalStorage(email, role, code) {
+  const users = getUsers();
+  if (!users[email]) {
+    users[email] = {
+      role,
+      classrooms: role === "teacher" ? [] : undefined,
+      classroomCode: role === "student" ? code : undefined
+    };
 
-  // If student: attach to class
-  if (role === "student") {
-    const classes = getClasses();
-    if (!classes[code]) {
-      loginMessage.textContent = "Classroom code not found.";
-      return;
+    if (role === "student") {
+      const classes = getClasses();
+      if (!classes[code]) {
+        loginMessage.textContent = "Classroom code not found.";
+        return false;
+      }
+      classes[code].students.push(email);
+      saveClasses(classes);
     }
-    classes[code].students.push(email);
-    saveClasses(classes);
-  }
 
-  saveUsers(users);
+    saveUsers(users);
+  }
+  return true;
 }
 
 // ─── Show version badge ─────────────────
@@ -49,7 +51,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.1.99';
+  badge.textContent = 'version 0.2.01';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -135,6 +137,8 @@ function initApp() {
 
       // Temporary display name from email prefix
       const name = email.split("@")[0];
+
+if (!setupUserInLocalStorage(email, role, code)) return;
 
 if (email === "magiccaloriecam@gmail.com") {
   document.getElementById("login-screen").classList.add("hidden");
@@ -369,6 +373,7 @@ if (role === "teacher") {
     return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
   }
 }
+
 
 
 

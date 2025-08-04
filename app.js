@@ -1,4 +1,4 @@
-// Version 0.2.03
+// Version 0.2.04
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -51,7 +51,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.2.03';
+  badge.textContent = 'version  0.2.04';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -188,36 +188,6 @@ function initApp() {
     }
   };
 
-    const users = getUsers();
-    if (isSignUp) {
-      if (users[u]) { loginMsg.textContent='User exists.'; return; }
-      users[u] = {
-        password: p,
-        role: r,
-        progress: {},
-        classrooms: r==='teacher'?[]:undefined,
-        classroomCode: r==='student'?c:undefined
-      };
-      if (r==='student') {
-        const classes = getClasses();
-        classes[c].students.push(u);
-        saveClasses(classes);
-      }
-      saveUsers(users);
-      localStorage.setItem('lastUser', u);
-      localStorage.setItem('currentUser', JSON.stringify({username:u,role:r}));
-      enterDash(u, r);
-    } else {
-      if (users[u] && users[u].password===p && users[u].role===r) {
-        localStorage.setItem('lastUser', u);
-        localStorage.setItem('currentUser', JSON.stringify({username:u,role:r}));
-        enterDash(u, r);
-      } else {
-        loginMsg.textContent='Incorrect credentials.';
-      }
-    }
-  };
-
   function enterDash(u, r) {
     logoutBtn.style.display = 'block';
     loginScreen.classList.add('hidden');
@@ -253,7 +223,6 @@ function initApp() {
     codeDisp.textContent = `New Code: ${newCode}`;
     renderTeacher(teacherName.textContent);
   };
-
 
   // ─── Drill Editor & Bulk Upload ───
 
@@ -776,3 +745,4 @@ function renderTeacher(t) {
   }
 
 // end initApp
+

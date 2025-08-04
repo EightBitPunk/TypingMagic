@@ -27,6 +27,8 @@ window.addEventListener("DOMContentLoaded", () => {
   initApp();
 });
 
+function initApp() {
+
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
 const roleSelect = document.getElementById("role");
@@ -337,6 +339,7 @@ document.getElementById("logout-btn").onclick = async () => {
     return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
   }
 }
+
 
 
 

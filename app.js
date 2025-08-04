@@ -131,7 +131,7 @@ function initApp() {
   logoutBtn.onclick = ()=> {
     localStorage.removeItem('currentUser');
     location.reload();
-  };
+  }
 
   loginBtn.onclick = async () => {
     loginMsg.textContent = "";
@@ -745,4 +745,5 @@ function renderTeacher(t) {
   }
 
 // end initApp
+
 

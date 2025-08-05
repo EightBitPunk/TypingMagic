@@ -1,4 +1,4 @@
-<!-- Version 0.2.02, Firebase Auth integration enabled -->
+<!-- Version 0.2.1, Firebase Auth integration enabled / purchase dummy added-->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -75,6 +75,12 @@
     </section>
   </main>
 
+  <!-- Credits balance & purchase -->
+  <section id="credits-section" class="hidden card" style="margin-top:2rem;">
+    <h3>Your Credits: <span id="credit-count">0</span></h3>
+    <button id="purchase-btn" class="btn primary">Buy 100 Credits ($5)</button>
+  </section>
+
   <button id="logout-btn" class="btn secondary" style="display:none;">Log Out</button>
 
   <!-- Load app logic with Firebase Auth (using module) -->
@@ -83,6 +89,7 @@
 
 </body>
 </html>
+
 
 
 

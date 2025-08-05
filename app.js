@@ -141,12 +141,10 @@ function initApp() {
       } else {
         cred = await signInWithEmailAndPassword(auth, email, password);
       }
-      // mirror into localStorage
       if (!setupUserInLocalStorage(email, role, code)) return;
       localStorage.setItem('lastUser', email);
       localStorage.setItem('currentUser', JSON.stringify({ email, role }));
 
-      // show dashboards
       loginScreen.classList.add('hidden');
       logoutBtn.style.display = 'block';
 
@@ -176,11 +174,17 @@ function initApp() {
     if (!name) { alert('Enter a class name.'); return; }
     const newCode = 'C' + (100000 + Math.floor(Math.random()*900000));
     const classes = getClasses();
-    classes[newCode] = { name, teacher: teacherName.textContent, students: [], drills: [
-      'The quick brown fox jumps over the lazy dog.',
-      'Typing practice improves both speed and accuracy.',
-      'Accuracy over speed.'
-    ], customDrills: {} };
+    classes[newCode] = {
+      name,
+      teacher: teacherName.textContent,
+      students: [],
+      drills: [
+        'The quick brown fox jumps over the lazy dog.',
+        'Typing practice improves both speed and accuracy.',
+        'Accuracy over speed.'
+      ],
+      customDrills: {}
+    };
     saveClasses(classes);
     const users = getUsers();
     users[teacherName.textContent].classrooms.push(newCode);
@@ -199,78 +203,15 @@ function initApp() {
     const cls = getClasses()[code];
     renderDrillsWithDate(code, cls.customDrills[today]||cls.drills, today, student, false);
   }
-  function buildCalendar(student, code) {/* … same as before … */}
-  function renderDrillsWithDate(code, drills, dateKey, student, isLate) {/* … */}
-}
-
-  function openEditor(user, code) {
-    const classes = getClasses()[code];
-    const di  = document.getElementById(`date-${code}`);
-    const ta  = document.getElementById(`ta-${code}`);
-    const ed  = document.getElementById(`editor-${code}`);
-    if (!di.value) di.value = new Date().toISOString().split('T')[0];
-    ta.value = (classes.customDrills[di.value]||classes.drills).join('\n');
-    document.getElementById(`all-${code}`).checked = false;
-    ed.style.display = 'block';
-  }
-  function openBulk(user, code) {
-    const inp = document.getElementById(`bulk-file-${code}`);
-    inp.classList.remove('hidden');
-    inp.click();
-  }
-  async function handleBulkUpload(evt, code) {
-    const file = evt.target.files[0]; if (!file) return;
-    const text = await file.text();
-    const ans  = prompt(
-      "Apply these drills to ALL of your classes?\n"+
-      "YES=All, NO=Only this class, CANCEL=Abort"
-    );
-    if (!ans) { evt.target.value=''; evt.target.classList.add('hidden'); return; }
-    const choice = ans.trim().toUpperCase();
-    if (choice!=='YES'&&choice!=='NO') return alert('Aborted.');
-    const applyAll = choice==='YES';
-    const classes = getClasses();
-    text.split(/\r?\n/).filter(Boolean).forEach(line=>{
-      const datePart = line.split('[')[0].trim();
-      const drills   = Array.from(line.matchAll(/\[([^\]]+)\]/g))
-                        .map(m=>m[1].trim()).filter(Boolean);
-      if (!datePart||!drills.length) return;
-      if (applyAll) {
-        getUsers()[getCurrentUser().username].classrooms
-          .forEach(cid=> classes[cid].customDrills[datePart]=drills);
-      } else {
-        classes[code].customDrills[datePart]=drills;
-      }
-    });
-    saveClasses(classes);
-    evt.target.value=''; evt.target.classList.add('hidden');
-    renderTeacher(getCurrentUser().username);
-  }
-
-
-  // ─── Student side ───
-
-  const promptEl   = document.getElementById('prompt');
-  const feedbackEl = document.getElementById('feedback');
-  const nextBtn    = document.getElementById('next-btn');
-
-  function renderStudent(code, student) {
-    buildCalendar(student, code);
-    loadDrills(code, student);
-  }
-
-  // ─── NEW buildCalendar with month/year and navigation ───
+  
   function buildCalendar(student, code) {
     const cls  = getClasses()[code];
     const prog = (getUsers()[student].progress)||{};
-    const container = document.getElementById('calendar');
-    container.innerHTML = '';  // clear out
+    calendarEl.innerHTML = '';
 
-    // Header with Prev/MonthName/Next
-    const monthNames = [
-      "January","February","March","April","May","June",
-      "July","August","September","October","November","December"
-    ];
+    // Header
+    const monthNames = ["January","February","March","April","May","June",
+      "July","August","September","October","November","December"];
     const hdr = document.createElement('div');
     hdr.style = "display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;";
     hdr.innerHTML = `
@@ -278,154 +219,71 @@ function initApp() {
       <strong>${monthNames[calMonth]} ${calYear}</strong>
       <button id="next-month">Next &gt;</button>
     `;
-    container.appendChild(hdr);
+    calendarEl.appendChild(hdr);
 
-    // Build the days‐of‐week row
+    // Table
     const tbl = document.createElement('table');
     tbl.style.borderCollapse = 'collapse';
     const headerRow = document.createElement('tr');
     ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => {
-      const th = document.createElement('th');
-      th.textContent = d;
-      th.style.padding = '4px';
+      const th = document.createElement('th'); th.textContent = d; th.style.padding = '4px';
       headerRow.appendChild(th);
     });
     tbl.appendChild(headerRow);
 
-    // Compute first weekday and days in month
     const firstDay = new Date(calYear, calMonth, 1).getDay();
     const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
     let tr = document.createElement('tr');
 
-    // Empty cells before month start
     for (let i = 0; i < firstDay; i++) {
-      const td = document.createElement('td');
-      td.style.padding = '4px';
-      tr.appendChild(td);
+      const td = document.createElement('td'); td.style.padding = '4px'; tr.appendChild(td);
     }
-
-    // Fill each day
     for (let day = 1; day <= daysInMonth; day++) {
-      if ((firstDay + day - 1) % 7 === 0 && day !== 1) {
-        tbl.appendChild(tr);
-        tr = document.createElement('tr');
-      }
+      if ((firstDay + day - 1) % 7 === 0 && day !== 1) { tbl.appendChild(tr); tr = document.createElement('tr'); }
       const td = document.createElement('td');
       td.textContent = day;
-      td.style.width = '24px';
-      td.style.height = '24px';
-      td.style.textAlign = 'center';
-      td.style.cursor = 'pointer';
-
+      td.style = 'width:24px;height:24px;text-align:center;cursor:pointer';
       const key = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
       if (prog[key]) {
-        td.style.background = 'lightgreen';
-        td.onclick = () => alert("You've already completed this drill.");
+        td.style.background = 'lightgreen'; td.onclick = () => alert("Completed");
       } else {
-        td.style.background = (new Date().toISOString().split('T')[0] > key)
-                            ? 'lightcoral'
-                            : (new Date().toISOString().split('T')[0] === key?'lightblue':'lightgray');
-        if (new Date(key) < new Date()) {
-          td.onclick = () => handlePast(code, key, student);
-        }
+        const todayKey = new Date().toISOString().slice(0,10);
+        td.style.background = key < todayKey ? 'lightcoral'
+                            : key === todayKey ? 'lightblue'
+                            : 'lightgray';
+        if (key < todayKey) td.onclick = () => handlePast(code, key, student);
       }
-
       tr.appendChild(td);
     }
-
     tbl.appendChild(tr);
-    container.appendChild(tbl);
+    calendarEl.appendChild(tbl);
 
-    // Wire up Prev / Next buttons
-    document.getElementById('prev-month').onclick = () => {
-      calMonth--;
-      if (calMonth < 0) { calMonth = 11; calYear--; }
-      buildCalendar(student, code);
-    };
-    document.getElementById('next-month').onclick = () => {
-      calMonth++;
-      if (calMonth > 11) { calMonth = 0; calYear++; }
-      buildCalendar(student, code);
-    };
+    document.getElementById('prev-month').onclick = () => { calMonth--; if (calMonth<0){calMonth=11;calYear--;} buildCalendar(student, code); };
+    document.getElementById('next-month').onclick = () => { calMonth++; if (calMonth>11){calMonth=0;calYear++;} buildCalendar(student, code); };
   }
-  // ─── end buildCalendar ───
 
-  function handlePast(code,key,student){
+  function handlePast(code, key, student) {
     const cls = getClasses()[code];
     const drills = cls.customDrills[key]||cls.drills;
-    if(!confirm(`Preview for ${key}?\n\n${drills.join('\n')}\n\nProceed?`)) return;
+    if (!confirm(`Preview for ${key}\n\n${drills.join('\n')}`)) return;
     renderDrillsWithDate(code, drills, key, student, true);
   }
-  function renderDrillsWithDate(code, drills, dateKey, student, isLate){
-    let idx=0,pos=0;
-    const stats=document.getElementById('student-stats');
-    stats.textContent='';
-    function updateAcc(){
-      const spans=[...document.querySelectorAll('.char')];
+
+  function renderDrillsWithDate(code, drills, dateKey, student, isLate) {
+    let idx=0, pos=0;
+    statsEl.textContent=''; promptEl.innerHTML='';
+    drills[idx].split('').forEach(ch=>{
+      const span=document.createElement('span'); span.textContent=ch; span.className='char'; promptEl.appendChild(span);
+    });
+    nextBtn.disabled=true;
+
+    function updateAcc() {
+      const spans=[...promptEl.querySelectorAll('.char')];
       const errs=spans.filter(s=>s.classList.contains('error')).length;
-      stats.textContent=`Accuracy: ${Math.round((spans.length-errs)/spans.length*100)}%`;
+      statsEl.textContent = `Accuracy: ${Math.round((spans.length-errs)/spans.length*100)}%`;
     }
-    function loadOne(){
-      promptEl.innerHTML='';
-      drills[idx].split('').forEach(ch=>{
-        const span=document.createElement('span');
-        span.className='char'; span.textContent=ch;
-        promptEl.append(span);
-      });
-      pos=0; mark(); feedbackEl.textContent=''; nextBtn.disabled=true;
-      nextBtn.textContent = idx<drills.length-1?'Next':'Submit';
-      updateAcc();
-    }
-    function mark(){
-      document.querySelectorAll('.char').forEach(s=>s.classList.remove('current'));
-      document.querySelectorAll('.char')[pos]?.classList.add('current');
-    }
-    document.onkeydown=e=>{
-      if(studentDash.classList.contains('hidden')) return;
-      if(e.key==='Backspace'){ e.preventDefault(); if(pos>0){ pos--; const spans=document.querySelectorAll('.char');
-          spans[pos].classList.remove('correct','error'); mark(); updateAcc(); nextBtn.disabled=true; } return; }
-      if(e.key.length!==1||pos>=drills[idx].length){ e.preventDefault(); return; }
-      const spans=document.querySelectorAll('.char');
-      spans[pos].classList.remove('current');
-      if(e.key===drills[idx][pos]) spans[pos].classList.add('correct');
-      else { spans[pos].classList.add('error'); feedbackEl.textContent=`Expected "${drills[idx][pos]}" got "${e.key}"`; }
-      pos++; mark(); updateAcc(); if(pos>=spans.length) nextBtn.disabled=false;
-    };
-    nextBtn.onclick=()=>{
-      const spans=document.querySelectorAll('.char');
-      const corr=[...spans].filter(s=>s.classList.contains('correct')).length;
-      const errs=[...spans].filter(s=>s.classList.contains('error')).length;
-      const pct = Math.round((corr/spans.length)*100);
-      const users=getUsers();
-      users[student].progress[dateKey] = users[student].progress[dateKey]||[];
-      users[student].progress[dateKey].push({drill:idx,correct:corr,errors:errs,accuracy:pct,late:isLate});
-      saveUsers(users);
-      if(idx<drills.length-1) { idx++; loadOne(); }
-      else { buildCalendar(student, code); promptEl.textContent='Completed!'; nextBtn.disabled=true; }
-    };
-    loadOne();
-  }
-  function loadDrills(code, student){
-    const today=new Date().toISOString().split('T')[0];
-    const cls=getClasses()[code];
-    renderDrillsWithDate(code, cls.customDrills[today]||cls.drills, today, student, false);
-  }
-
-
-// ─── Teacher / Admin helpers ─────────
-function renderTeacher(u) {
-  const users = getUsers();
-  const classes = getClasses();
-  const container = document.getElementById('student-progress-table');
-  container.innerHTML = '';
-  (users[u].classrooms||[]).forEach(code => {
-    const c = classes[code]; if (!c) return;
-    const card = document.createElement('div');
-    card.className = 'class-card';
-    card.innerHTML = `… your card markup …`;
-    container.appendChild(card);
-    // wire up buttons and list students/assignments
-  });
-}
-function enterAdmin() { /* … */ }
-function deleteUser(u) { /* … */ }
+    document.onkeydown = e => {
+      if (e.key==='Backspace') {
+        e.preventDefault(); if (pos>0) { pos--; const spans=promptEl.querySelectorAll('.char'); spans[pos].classList.remove('correct','error'); updateAcc(); nextBtn.disabled=true; } return; }
+      if (e.key.length!==1 || pos>=drills[idx].length) { e.preventDefault(); return; }
+      const spans=promptEl.querySelectorAll('.char'); spans[pos].classList.remove('current');

@@ -1,4 +1,4 @@
-// Version 0.2.11
+// Version 0.2.12
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -7,6 +7,11 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+  const getUsers    = () => JSON.parse(localStorage.getItem('users')    || '{}');
+  const saveUsers   = u  => localStorage.setItem('users', JSON.stringify(u));
+  const getClasses  = () => JSON.parse(localStorage.getItem('classrooms')|| '{}');
+  const saveClasses = c  => localStorage.setItem('classrooms', JSON.stringify(c));
 
 // ─── Firebase init ─────────────────────
 const firebaseConfig = {
@@ -49,7 +54,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.2.11';
+  badge.textContent = 'version 0.2.12';
   Object.assign(badge.style, {
     position: 'fixed',
     bottom: '5px',
@@ -72,10 +77,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
 function initApp() {
   // ─── LocalStorage wrappers ───────────
-  const getUsers    = () => JSON.parse(localStorage.getItem('users')    || '{}');
-  const saveUsers   = u  => localStorage.setItem('users', JSON.stringify(u));
-  const getClasses  = () => JSON.parse(localStorage.getItem('classrooms')|| '{}');
-  const saveClasses = c  => localStorage.setItem('classrooms', JSON.stringify(c));
   const getCurrentUser = () => JSON.parse(localStorage.getItem('currentUser') || 'null');
 
   const defaultDrills = [
@@ -432,3 +433,4 @@ function enterAdmin() {
 function deleteUser(u) {
   // your existing deleteUser logic
 }
+

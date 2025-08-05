@@ -1,5 +1,8 @@
-// Version 0.2.04
+// Version 0.2.1
 
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-functions.js";
+import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+import { Stripe } from "https://js.stripe.com/v3/";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
   getAuth,
@@ -51,7 +54,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version  0.2.04';
+  badge.textContent = 'version  0.2.1';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -141,6 +144,38 @@ function initApp() {
     const role = roleSel.value;
     const code = classIn.value.trim();
 
+// --- purchase & credits wiring ---
+const creditsSection = document.getElementById("credits-section");
+const purchaseBtn    = document.getElementById("purchase-btn");
+const creditCountEl  = document.getElementById("credit-count");
+
+// only show the credits UI when logged in:
+if (getCurrentUser()) {
+  creditsSection.classList.remove("hidden");
+  // real-time listen to the user's credits field:
+  const db = getFirestore(app);
+  onSnapshot(doc(db, "customers", auth.currentUser.uid), snap => {
+    const credits = snap.data()?.credits || 0;
+    creditCountEl.textContent = credits;
+  });
+}
+
+// hook up the “Buy 100 Credits” button:
+const functions = getFunctions(app, "us-central1");
+const createCheckout = httpsCallable(functions, "ext-firestore-stripe-payments-createCheckoutSession");
+purchaseBtn.onclick = async () => {
+  // your Stripe Price ID for “100 credits for $5”
+  const priceId = "price_XXXXXXXXXXXX";
+  const { data } = await createCheckout({
+    price: priceId,
+    success_url: window.location.href
+  });
+  // redirect into Stripe-hosted Checkout
+
+  const stripe = Stripe("pk_test_YYYYYYYYYYYYYY");
+  await stripe.redirectToCheckout({ sessionId: data.sessionId });
+};
+    
     // Basic front‐end check:
     if (!email || !password || (signUpMode && role==="student" && !code)) {
       loginMsg.textContent = "Complete all fields.";
@@ -745,5 +780,6 @@ function renderTeacher(t) {
   }
 
 // end initApp
+
 
 

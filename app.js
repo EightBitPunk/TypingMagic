@@ -1,4 +1,4 @@
-// app.js – Version 0.2.22
+// app.js – Version 0.2.23
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -6,6 +6,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
+  sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
 // ─── Firebase init ─────────────────────
@@ -83,7 +84,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.2.22';
+  badge.textContent = 'version 0.2.23';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -704,6 +705,7 @@ function renderTeacher(t) {
 
 }  // ← closes initApp()
 }
+
 
 
 

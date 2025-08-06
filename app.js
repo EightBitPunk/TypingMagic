@@ -119,6 +119,7 @@ function initApp() {
   const roleSel     = document.getElementById('role');
   const classIn     = document.getElementById('classroom-code');
   const loginMsg    = document.getElementById('login-message');
+  const forgotLink   = document.getElementById('forgot-password-link');
   const studentWrap = document.getElementById('student-classroom-code');
   const teacherDash = document.getElementById('teacher-dashboard');
   const classSetup  = document.getElementById('classroom-setup');
@@ -149,6 +150,24 @@ function initApp() {
     studentWrap.classList.toggle('hidden', !(isSignUp && roleSel.value==='student'));
     loginMsg.textContent = '';
   }
+
+ forgotLink.onclick = async (e) => {
+   e.preventDefault();
+   const email = userIn.value.trim();
+   if (!email) {
+     loginMsg.textContent = 'Enter your email above to reset.';
+     return;
+   }
+   try {
+     await sendPasswordResetEmail(auth, email);
+     loginMsg.style.color = 'green';
+     loginMsg.textContent = `Reset email sent to ${email}.`;
+   } catch (err) {
+     console.error('Reset error:', err);
+     loginMsg.style.color = 'red';
+     loginMsg.textContent = err.message.replace('Firebase: ', '');
+   }
+ };
 
   toggleBtn.onclick = ()=> { isSignUp = !isSignUp; updateMode(); };
   roleSel.onchange  = updateMode;
@@ -705,6 +724,7 @@ function renderTeacher(t) {
 
 }  // ← closes initApp()
 }
+
 
 
 

@@ -723,11 +723,3 @@ function renderTeacher(t) {
   }
 
 }  // ← closes initApp()
-}
-
-
-
-
-
-
-

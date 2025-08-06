@@ -1,4 +1,4 @@
-// app.js – Version 0.2.21
+// app.js – Version 0.2.22
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -83,7 +83,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.2.21';
+  badge.textContent = 'version 0.2.22';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -138,28 +138,30 @@ function initApp() {
   // ─── restore last login ───
   const lastUser = localStorage.getItem('lastUser');
   if (lastUser) userIn.value = lastUser;
-
-
-  // ─── restore last role ───
-  const lastRole = localStorage.getItem('lastRole');
-  if (lastRole) {
-    roleSel.value = lastRole;
-    updateMode();      // so the UI (and studentWrap) updates to match
-  }
  
  // ─── toggle sign-up/login ───
   let isSignUp = false;
+
   function updateMode() {
     loginBtn.textContent  = isSignUp ? 'Sign Up' : 'Log In';
     toggleBtn.textContent = isSignUp ? 'Go to Log In' : 'Sign Up';
     studentWrap.classList.toggle('hidden', !(isSignUp && roleSel.value==='student'));
     loginMsg.textContent = '';
   }
+
   toggleBtn.onclick = ()=> { isSignUp = !isSignUp; updateMode(); };
   roleSel.onchange  = updateMode;
-  updateMode();
 
-  // ─── logout ───
+  const lastRole = localStorage.getItem('lastRole');
+  if (lastRole) {
+    roleSel.value = lastRole;
+  }
+
+updateMode(); 
+// END: toggle sign-up/login
+
+// START: logout
+
   logoutBtn.style.display = 'none';
   logoutBtn.onclick = async () => { await signOut(auth); location.reload(); };
 
@@ -702,6 +704,7 @@ function renderTeacher(t) {
 
 }  // ← closes initApp()
 }
+
 
 
 

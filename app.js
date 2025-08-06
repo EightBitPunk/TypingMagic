@@ -1,4 +1,4 @@
-// app.js – Version 0.2.20
+// app.js – Version 0.2.21
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -83,7 +83,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.2.20';
+  badge.textContent = 'version 0.2.21';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -139,7 +139,15 @@ function initApp() {
   const lastUser = localStorage.getItem('lastUser');
   if (lastUser) userIn.value = lastUser;
 
-  // ─── toggle sign-up/login ───
+
+  // ─── restore last role ───
+  const lastRole = localStorage.getItem('lastRole');
+  if (lastRole) {
+    roleSel.value = lastRole;
+    updateMode();      // so the UI (and studentWrap) updates to match
+  }
+ 
+ // ─── toggle sign-up/login ───
   let isSignUp = false;
   function updateMode() {
     loginBtn.textContent  = isSignUp ? 'Sign Up' : 'Log In';
@@ -694,6 +702,7 @@ function renderTeacher(t) {
 
 }  // ← closes initApp()
 }
+
 
 
 

@@ -637,5 +637,4 @@ function renderTeacher(t) {
     saveUsers(us);
   }
 
-} // end initApp
-
+} 

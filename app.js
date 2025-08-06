@@ -1,4 +1,4 @@
-// app.js – Version 0.2.19
+// app.js – Version 0.2.20
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -83,7 +83,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.2.19';
+  badge.textContent = 'version 0.2.20';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -198,6 +198,7 @@ loginBtn.onclick = async () => {
       else cred = await signInWithEmailAndPassword(auth,email,pw);
       if (!setupUserInLocalStorageFc(email,role,code)) return;
       localStorage.setItem('lastUser', email);
+      localStorage.setItem('lastRole', role);  
       localStorage.setItem('currentUser', JSON.stringify({email, role}));
       loginScreen.classList.add('hidden');
       logoutBtn.style.display='block';
@@ -693,5 +694,6 @@ function renderTeacher(t) {
 
 }  // ← closes initApp()
 }
+
 
 

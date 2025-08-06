@@ -1,4 +1,4 @@
-// app.js – Version 0.2.17
+// app.js – Version 0.2.18
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -20,6 +20,60 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
+// ─── LocalStorage wrappers ───────────────────────────────
+const getUsers    = () => JSON.parse(localStorage.getItem('users')    || '{}');
+const saveUsers   = u  => localStorage.setItem('users', JSON.stringify(u));
+const getClasses  = () => JSON.parse(localStorage.getItem('classrooms')|| '{}');
+const saveClasses = c  => localStorage.setItem('classrooms', JSON.stringify(c));
+const getCurrentUser = () => JSON.parse(localStorage.getItem('currentUser') || 'null');
+
+// ─── Bulk‐Upload Handler (now in global scope) ───────────
+async function handleBulkUpload(evt, code) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const text = await file.text();
+  const ans  = prompt(
+    "Apply these drills to ALL of your classes?\n" +
+    "YES=All, NO=Only this class, CANCEL=Abort"
+  );
+  if (!ans) {
+    evt.target.value = '';
+    evt.target.classList.add('hidden');
+    return;
+  }
+
+  const choice   = ans.trim().toUpperCase();
+  if (choice !== 'YES' && choice !== 'NO') {
+    alert('Aborted.');
+    return;
+  }
+  const applyAll = choice === 'YES';
+  const classes  = getClasses();
+
+  text.split(/\r?\n/).filter(Boolean).forEach(line => {
+    const datePart = line.split('[')[0].trim();
+    const drills   = Array.from(line.matchAll(/\[([^\]]+)\]/g))
+                      .map(m => m[1].trim())
+                      .filter(Boolean);
+    if (!datePart || !drills.length) return;
+
+    if (applyAll) {
+      const me = getCurrentUser().email;
+      getUsers()[me].classrooms
+        .forEach(cid => classes[cid].customDrills[datePart] = drills);
+    } else {
+      classes[code].customDrills[datePart] = drills;
+    }
+  });
+
+  saveClasses(classes);
+  evt.target.value = '';
+  evt.target.classList.add('hidden');
+  renderTeacher(getCurrentUser().email);
+}
+
+// End of Bulk‐Upload Handler
+
 window.addEventListener("DOMContentLoaded", () => {
   showVersion();
   initApp();
@@ -29,7 +83,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.2.17';
+  badge.textContent = 'version 0.2.18';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -639,3 +693,4 @@ function renderTeacher(t) {
 
 }  // ← closes initApp()
 }
+

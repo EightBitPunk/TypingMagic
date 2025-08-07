@@ -1,4 +1,4 @@
-// app.js – Version 0.2.25
+// app.js – Version 0.2.26
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -84,7 +84,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.2.25';
+  badge.textContent = 'version 0.2.26';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -139,7 +139,6 @@ function initApp() {
 
   // ─── student calendar/drills ───
   function renderStudent(code,u){ buildCalendar(u,code); loadDrills(code,u);}  
-  console.log('renderStudent', code, u);
   function loadDrills(code,u){ const day=new Date().toISOString().slice(0,10);
     const cls=getClasses()[code]; renderDrillsWithDate(code,cls.customDrills[day]||cls.drills,day,u,false);
   }
@@ -717,5 +716,6 @@ function renderTeacher(t) {
   }
 
 }  // ← closes initApp()
+
 
 

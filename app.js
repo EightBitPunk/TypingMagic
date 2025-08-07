@@ -13,7 +13,7 @@ import {
 const firebaseConfig = {
   apiKey: "AIzaSyBIMcBtlLhHhBaAnzSDQIp5S608lyEgo-o",
   authDomain: "typingmastery-acf2f.firebaseapp.com",
-  projectId: "typingmastery-acf2versif",
+  projectId: "typingmastery-acf2",
   storageBucket: "typingmastery-acf2f.appspot.com",
   messagingSenderId: "199688909073",
   appId: "1:199688909073:web:689e8c7e8fa6167170dcb0"
@@ -101,10 +101,6 @@ function initApp() {
     'Typing practice improves both speed and accuracy.',
     'Accuracy over speed.'
   ];
-  const getUsers   = () => JSON.parse(localStorage.getItem('users')    || '{}');
-  const saveUsers  = u  => localStorage.setItem('users', JSON.stringify(u));
-  const getClasses = () => JSON.parse(localStorage.getItem('classrooms')|| '{}');
-  const saveClasses= c  => localStorage.setItem('classrooms', JSON.stringify(c));
 
   let calYear  = new Date().getFullYear();
   let calMonth = new Date().getMonth();
@@ -726,3 +722,4 @@ function renderTeacher(t) {
   }
 
 }  // ← closes initApp()
+

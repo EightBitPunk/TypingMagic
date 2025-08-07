@@ -137,6 +137,12 @@ function initApp() {
   const calendarEl  = document.getElementById('calendar');
   const statsEl     = document.getElementById('student-stats');
 
+  // ─── student calendar/drills ───
+  function renderStudent(code,u){ buildCalendar(u,code); loadDrills(code,u);}  
+  function loadDrills(code,u){ const day=new Date().toISOString().slice(0,10);
+    const cls=getClasses()[code]; renderDrillsWithDate(code,cls.customDrills[day]||cls.drills,day,u,false);
+  }
+
   // ─── restore last login ───
   const lastUser = localStorage.getItem('lastUser');
   if (lastUser) userIn.value = lastUser;
@@ -228,6 +234,7 @@ updateMode();
         teacherDash.classList.remove('hidden'); classSetup.classList.remove('hidden');
         teacherView.classList.remove('hidden'); renderTeacher(email);
       } else {
+      // ─── STUDENT BRANCH ───
         studentName.textContent=email;
         studentDash.classList.remove('hidden'); 
         renderStudent(code,email);
@@ -247,12 +254,6 @@ updateMode();
     saveUsers(us); codeDisp.textContent=`New Code: ${nc}`;
     renderTeacher(teacherName.textContent);
   };
-
-  // ─── student calendar/drills ───
-  function renderStudent(code,u){ buildCalendar(u,code); loadDrills(code,u);}  
-  function loadDrills(code,u){ const day=new Date().toISOString().slice(0,10);
-    const cls=getClasses()[code]; renderDrillsWithDate(code,cls.customDrills[day]||cls.drills,day,u,false);
-  }
 
  function buildCalendar(student, code) {
     const cls  = getClasses()[code];
@@ -717,5 +718,6 @@ function renderTeacher(t) {
 
 }  // ← closes initApp()
 }
+
 
 

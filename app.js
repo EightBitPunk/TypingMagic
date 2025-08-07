@@ -1,4 +1,4 @@
-// app.js – Version 0.2.28
+// app.js – Version 0.2.29
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -84,7 +84,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.2.28';
+  badge.textContent = 'version 0.2.29';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -138,8 +138,34 @@ function initApp() {
   const statsEl     = document.getElementById('student-stats');
 
   // ─── student calendar/drills ───
-  function renderStudent(code,u){ buildCalendar(u,code); loadDrills(code,u);}  
-  function loadDrills(code,u){ const day=new Date().toISOString().slice(0,10);
+
+  // ─── student calendar/drills ───
+  function renderStudent(code, userEmail) {
+    const classes = getClasses();
+    const cls = classes[code];
+    if (!cls) {
+      console.error(`No class found for code "${code}"`, classes);
+      alert(`Invalid class code: ${code}`);
+      return;
+    }
+    // ensure customDrills object exists
+    cls.customDrills = cls.customDrills || {};
+    buildCalendar(userEmail, code);
+    loadDrills(code, userEmail);
+  }
+
+  function loadDrills(code, userEmail) {
+    const classes = getClasses();
+    const cls = classes[code];
+    // guard again (just in case)
+    if (!cls) return;
+    cls.customDrills = cls.customDrills || {};
+    const today = new Date().toISOString().slice(0,10);
+    // pick custom‐today or fallback to default drills
+    const drills = cls.customDrills[today] || cls.drills;
+    renderDrillsWithDate(code, drills, today, userEmail, false);
+  }
+
  const today = new Date().toISOString().slice(0,10);
   const cls   = getClasses()[code];
   cls.customDrills = cls.customDrills || {};
@@ -717,6 +743,7 @@ function renderTeacher(t) {
   }
 
 }  // ← closes initApp()
+
 
 
 

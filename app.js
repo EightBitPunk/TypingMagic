@@ -211,7 +211,8 @@ updateMode();
     const pw    = passIn.value;
     const role  = roleSel.value;
     const code  = classIn.value.trim();
-    if (!email||!pw||(isSignUp&&role==='student'&&!code)) { loginMsg.textContent='Complete all fields'; return; }
+ 
+   if (!email||!pw||(isSignUp&&role==='student'&&!code)) { loginMsg.textContent='Complete all fields'; return; }
     try {
       let cred;
       if (isSignUp) cred = await createUserWithEmailAndPassword(auth,email,pw);
@@ -228,7 +229,9 @@ updateMode();
         teacherView.classList.remove('hidden'); renderTeacher(email);
       } else {
         studentName.textContent=email;
-        studentDash.classList.remove('hidden'); renderStudent(code,email);
+        studentDash.classList.remove('hidden'); 
+        renderStudent(code,email);
+        loadDrills(code, email);
       }
     } catch(e) { console.error(e); loginMsg.textContent=e.message.replace('Firebase: ',''); }
   };
@@ -714,4 +717,5 @@ function renderTeacher(t) {
 
 }  // ← closes initApp()
 }
+
 

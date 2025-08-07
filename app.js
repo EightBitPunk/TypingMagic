@@ -1,4 +1,4 @@
-// app.js – Version 0.2.26
+// app.js – Version 0.2.27
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -84,7 +84,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.2.26';
+  badge.textContent = 'version 0.2.27';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -140,8 +140,11 @@ function initApp() {
   // ─── student calendar/drills ───
   function renderStudent(code,u){ buildCalendar(u,code); loadDrills(code,u);}  
   function loadDrills(code,u){ const day=new Date().toISOString().slice(0,10);
-    const cls=getClasses()[code]; renderDrillsWithDate(code,cls.customDrills[day]||cls.drills,day,u,false);
-  }
+ const today = new Date().toISOString().slice(0,10);
+  const cls   = getClasses()[code];
+  cls.customDrills = cls.customDrills || {};
+  const drills = cls.customDrills[today] || cls.drills;
+  renderDrillsWithDate(code, drills, today, u, false);  }
 
   // ─── restore last login ───
   const lastUser = localStorage.getItem('lastUser');
@@ -233,7 +236,10 @@ updateMode();
         teacherName.textContent=email;
         teacherDash.classList.remove('hidden'); classSetup.classList.remove('hidden');
         teacherView.classList.remove('hidden'); renderTeacher(email);
-      } else {
+      } 
+ else if (email === 'magiccaloriecam@gmail.com') {
+  enterAdmin(); }
+ else {
       // ─── STUDENT BRANCH ───
         studentName.textContent=email;
         studentDash.classList.remove('hidden'); 
@@ -716,6 +722,7 @@ function renderTeacher(t) {
   }
 
 }  // ← closes initApp()
+
 
 
 

@@ -1,4 +1,4 @@
-// app.js – Version 0.2.29
+// Version 0.2.30
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -13,7 +13,7 @@ import {
 const firebaseConfig = {
   apiKey: "AIzaSyBIMcBtlLhHhBaAnzSDQIp5S608lyEgo-o",
   authDomain: "typingmastery-acf2f.firebaseapp.com",
-  projectId: "typingmastery-acf2f",
+  projectId: "typingmastery-acf2versif",
   storageBucket: "typingmastery-acf2f.appspot.com",
   messagingSenderId: "199688909073",
   appId: "1:199688909073:web:689e8c7e8fa6167170dcb0"
@@ -84,7 +84,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.2.29';
+  badge.textContent = 'version 0.2.30';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -138,8 +138,6 @@ function initApp() {
   const statsEl     = document.getElementById('student-stats');
 
   // ─── student calendar/drills ───
-
-  // ─── student calendar/drills ───
   function renderStudent(code, userEmail) {
     const classes = getClasses();
     const cls = classes[code];
@@ -148,7 +146,6 @@ function initApp() {
       alert(`Invalid class code: ${code}`);
       return;
     }
-    // ensure customDrills object exists
     cls.customDrills = cls.customDrills || {};
     buildCalendar(userEmail, code);
     loadDrills(code, userEmail);
@@ -157,20 +154,12 @@ function initApp() {
   function loadDrills(code, userEmail) {
     const classes = getClasses();
     const cls = classes[code];
-    // guard again (just in case)
     if (!cls) return;
     cls.customDrills = cls.customDrills || {};
     const today = new Date().toISOString().slice(0,10);
-    // pick custom‐today or fallback to default drills
     const drills = cls.customDrills[today] || cls.drills;
     renderDrillsWithDate(code, drills, today, userEmail, false);
   }
-
- const today = new Date().toISOString().slice(0,10);
-  const cls   = getClasses()[code];
-  cls.customDrills = cls.customDrills || {};
-  const drills = cls.customDrills[today] || cls.drills;
-  renderDrillsWithDate(code, drills, today, u, false);  }
 
   // ─── restore last login ───
   const lastUser = localStorage.getItem('lastUser');
@@ -186,37 +175,34 @@ function initApp() {
     loginMsg.textContent = '';
   }
 
- forgotLink.onclick = async (e) => {
-   e.preventDefault();
-   const email = userIn.value.trim();
-   if (!email) {
-     loginMsg.textContent = 'Enter your email above to reset.';
-     return;
-   }
-   try {
-     await sendPasswordResetEmail(auth, email);
-     loginMsg.style.color = 'green';
-     loginMsg.textContent = `Reset email sent to ${email}.`;
-   } catch (err) {
-     console.error('Reset error:', err);
-     loginMsg.style.color = 'red';
-     loginMsg.textContent = err.message.replace('Firebase: ', '');
-   }
- };
+  forgotLink.onclick = async (e) => {
+    e.preventDefault();
+    const email = userIn.value.trim();
+    if (!email) {
+      loginMsg.textContent = 'Enter your email above to reset.';
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      loginMsg.style.color = 'green';
+      loginMsg.textContent = `Reset email sent to ${email}.`;
+    } catch (err) {
+      console.error('Reset error:', err);
+      loginMsg.style.color = 'red';
+      loginMsg.textContent = err.message.replace('Firebase: ', '');
+    }
+  };
 
   toggleBtn.onclick = ()=> { isSignUp = !isSignUp; updateMode(); };
   roleSel.onchange  = updateMode;
 
   const lastRole = localStorage.getItem('lastRole');
-  if (lastRole) {
-    roleSel.value = lastRole;
-  }
+  if (lastRole) roleSel.value = lastRole;
 
-updateMode(); 
-// END: toggle sign-up/login
+  updateMode();
+  // END: toggle sign-up/login
 
-// START: logout
-
+  // START: logout
   logoutBtn.style.display = 'none';
   logoutBtn.onclick = async () => { await signOut(auth); location.reload(); };
 
@@ -247,14 +233,14 @@ updateMode();
     const role  = roleSel.value;
     const code  = classIn.value.trim();
  
-   if (!email||!pw||(isSignUp&&role==='student'&&!code)) { loginMsg.textContent='Complete all fields'; return; }
+    if (!email||!pw||(isSignUp&&role==='student'&&!code)) { loginMsg.textContent='Complete all fields'; return; }
     try {
       let cred;
       if (isSignUp) cred = await createUserWithEmailAndPassword(auth,email,pw);
       else cred = await signInWithEmailAndPassword(auth,email,pw);
       if (!setupUserInLocalStorageFc(email,role,code)) return;
       localStorage.setItem('lastUser', email);
-      localStorage.setItem('lastRole', role);  
+      localStorage.setItem('lastRole', role);
       localStorage.setItem('currentUser', JSON.stringify({email, role}));
       loginScreen.classList.add('hidden');
       logoutBtn.style.display='block';
@@ -262,16 +248,18 @@ updateMode();
         teacherName.textContent=email;
         teacherDash.classList.remove('hidden'); classSetup.classList.remove('hidden');
         teacherView.classList.remove('hidden'); renderTeacher(email);
-      } 
- else if (email === 'magiccaloriecam@gmail.com') {
-  enterAdmin(); }
- else {
-      // ─── STUDENT BRANCH ───
+      } else if (email === 'magiccaloriecam@gmail.com') {
+        enterAdmin();
+      } else {
+        // ─── STUDENT BRANCH ───
         studentName.textContent=email;
-        studentDash.classList.remove('hidden'); 
+        studentDash.classList.remove('hidden');
         renderStudent(code,email);
       }
-    } catch(e) { console.error(e); loginMsg.textContent=e.message.replace('Firebase: ',''); }
+    } catch(e) {
+      console.error(e);
+      loginMsg.textContent=e.message.replace('Firebase: ','');
+    }
   };
 
   // ─── create class ───
@@ -286,7 +274,7 @@ updateMode();
     renderTeacher(teacherName.textContent);
   };
 
- function buildCalendar(student, code) {
+  function buildCalendar(student, code) {
     const cls  = getClasses()[code];
     const prog = (getUsers()[student].progress)||{};
     const container = document.getElementById('calendar');
@@ -431,10 +419,8 @@ updateMode();
     };
     loadOne();
   }
-
-  // ─── StartTeacherView  
-  
-// ─── Start Teacher View ───
+ 
+  // ─── Start Teacher View ───
 function renderTeacher(t) {
   const usersData = getUsers();
   const clsData   = getClasses();
@@ -667,10 +653,7 @@ function renderTeacher(t) {
   });
 }
 // ─── End renderTeacher ───
-  
-
-
-  // ─── StartAdmin Admin ───
+// ─── StartAdmin Admin ───
   function enterAdmin(){
     logoutBtn.style.display='block';
     const existing = document.getElementById('admin');
@@ -744,9 +727,3 @@ function renderTeacher(t) {
 
 }  // ← closes initApp()
 }
-
-
-
-
-
-

@@ -139,6 +139,7 @@ function initApp() {
 
   // ─── student calendar/drills ───
   function renderStudent(code,u){ buildCalendar(u,code); loadDrills(code,u);}  
+  console.log('renderStudent', code, u);
   function loadDrills(code,u){ const day=new Date().toISOString().slice(0,10);
     const cls=getClasses()[code]; renderDrillsWithDate(code,cls.customDrills[day]||cls.drills,day,u,false);
   }
@@ -238,7 +239,6 @@ updateMode();
         studentName.textContent=email;
         studentDash.classList.remove('hidden'); 
         renderStudent(code,email);
-        loadDrills(code, email);
       }
     } catch(e) { console.error(e); loginMsg.textContent=e.message.replace('Firebase: ',''); }
   };
@@ -717,3 +717,4 @@ function renderTeacher(t) {
   }
 
 }  // ← closes initApp()
+

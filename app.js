@@ -1,4 +1,4 @@
-// Version 0.2.31
+// Version 0.2.32
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -6,7 +6,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  sendPasswordResetEmail
+  sendPasswordResetEmail, 
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
 // ─── Firebase init ─────────────────────
@@ -20,6 +21,14 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+console.log('Firebase initialized (app.name):', app.name);
+onAuthStateChanged(auth, user => {
+  if (user) {
+    console.log('Firebase: signed IN →', user.email, 'uid=', user.uid, 'metadata=', user.metadata);
+  } else {
+    console.log('Firebase: signed OUT');
+  }
+});
 
 // ─── LocalStorage wrappers ───────────────────────────────
 const getUsers    = () => JSON.parse(localStorage.getItem('users')    || '{}');
@@ -84,7 +93,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.2.31';
+  badge.textContent = 'version 0.2.32';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -770,5 +779,6 @@ function renderTeacher(t) {
   }
 
 }  // ← closes initApp()
+
 
 

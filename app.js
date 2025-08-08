@@ -1,4 +1,4 @@
-// Version 0.2.30
+// Version 0.2.31
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -84,7 +84,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.2.30';
+  badge.textContent = 'version 0.2.31';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -221,42 +221,90 @@ function initApp() {
     return true;
   }
 
-  // ─── login/signup handler ───
-  loginBtn.onclick = async () => {
-    loginMsg.textContent = '';
-    const email = userIn.value.trim();
-    const pw    = passIn.value;
-    const role  = roleSel.value;
-    const code  = classIn.value.trim();
- 
-    if (!email||!pw||(isSignUp&&role==='student'&&!code)) { loginMsg.textContent='Complete all fields'; return; }
-    try {
-      let cred;
-      if (isSignUp) cred = await createUserWithEmailAndPassword(auth,email,pw);
-      else cred = await signInWithEmailAndPassword(auth,email,pw);
-      if (!setupUserInLocalStorageFc(email,role,code)) return;
-      localStorage.setItem('lastUser', email);
-      localStorage.setItem('lastRole', role);
-      localStorage.setItem('currentUser', JSON.stringify({email, role}));
-      loginScreen.classList.add('hidden');
-      logoutBtn.style.display='block';
-      if (role==='teacher') {
-        teacherName.textContent=email;
-        teacherDash.classList.remove('hidden'); classSetup.classList.remove('hidden');
-        teacherView.classList.remove('hidden'); renderTeacher(email);
-      } else if (email === 'magiccaloriecam@gmail.com') {
-        enterAdmin();
-      } else {
-        // ─── STUDENT BRANCH ───
-        studentName.textContent=email;
-        studentDash.classList.remove('hidden');
-        renderStudent(code,email);
+// ─── login/signup handler (replacement) ───
+loginBtn.onclick = async () => {
+  loginMsg.textContent = '';
+  const email = userIn.value.trim();
+  const pw    = passIn.value;
+  const role  = roleSel.value;
+  const code  = classIn.value.trim();
+
+  // require class code only when signing up as a student
+  if (!email || !pw || (isSignUp && role === 'student' && !code)) {
+    loginMsg.textContent = 'Complete all fields';
+    return;
+  }
+
+  try {
+    let cred;
+    if (isSignUp) {
+      cred = await createUserWithEmailAndPassword(auth, email, pw);
+      // on sign-up we must set up the localStorage user (this validates the class code)
+      if (!setupUserInLocalStorageFc(email, role, code)) return;
+    } else {
+      cred = await signInWithEmailAndPassword(auth, email, pw);
+      // on sign-in: ensure a minimal localStorage entry exists (don't require class code here)
+      const users = getUsers();
+      if (!users[email]) {
+        users[email] = {
+          role,
+          classrooms: role === 'teacher' ? [] : undefined,
+          classroomCode: role === 'student' ? undefined : undefined,
+          progress: {}
+        };
+        saveUsers(users);
       }
-    } catch(e) {
-      console.error(e);
-      loginMsg.textContent=e.message.replace('Firebase: ','');
     }
-  };
+
+    // Save current session
+    localStorage.setItem('lastUser', email);
+    localStorage.setItem('lastRole', role);
+
+    // store currentUser with optional classroomCode if present
+    const storedUser = getUsers()[email] || {};
+    localStorage.setItem('currentUser', JSON.stringify({
+      email,
+      role,
+      classroomCode: storedUser.classroomCode || (isSignUp && role === 'student' ? code : undefined)
+    }));
+
+    // Hide login UI and show logout
+    loginScreen.classList.add('hidden');
+    logoutBtn.style.display = 'block';
+
+    // Route to the right dashboard
+    if (role === 'teacher') {
+      teacherName.textContent = email;
+      teacherDash.classList.remove('hidden');
+      classSetup.classList.remove('hidden');
+      teacherView.classList.remove('hidden');
+      renderTeacher(email);
+    } else if (email === 'magiccaloriecam@gmail.com') {
+      // Admin override (unchanged)
+      enterAdmin();
+    } else {
+      // STUDENT branch: choose class code intelligently
+      studentName.textContent = email;
+      studentDash.classList.remove('hidden');
+
+      // prefer explicit code (from sign-up), otherwise fallback to stored classroomCode
+      const stored = getUsers()[email];
+      const fallbackCode = stored && stored.classroomCode ? stored.classroomCode : (getCurrentUser() && getCurrentUser().classroomCode);
+      const studentCode = (isSignUp && code) ? code : fallbackCode;
+
+      if (!studentCode) {
+        // no class found — don't call renderStudent with empty code
+        loginMsg.textContent = 'No class code found for this student. If you just signed up, please enter a valid class code.';
+        return;
+      }
+
+      renderStudent(studentCode, email);
+    }
+  } catch (e) {
+    console.error(e);
+    loginMsg.textContent = e.message.replace('Firebase: ', '');
+  }
+};
 
   // ─── create class ───
   createBtn.onclick = ()=>{
@@ -722,4 +770,5 @@ function renderTeacher(t) {
   }
 
 }  // ← closes initApp()
+
 

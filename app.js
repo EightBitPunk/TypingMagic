@@ -1,4 +1,4 @@
-// Version 0.2.32
+// Version 0.2.32.Stable
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {
@@ -93,7 +93,7 @@ function showVersion() {
   document.querySelectorAll('.version-badge').forEach(el => el.remove());
   const badge = document.createElement('div');
   badge.className = 'version-badge';
-  badge.textContent = 'version 0.2.32';
+  badge.textContent = 'version 0.2.32.Stable';
   Object.assign(badge.style, {
     position: 'fixed', bottom: '5px', right: '10px',
     fontSize: '0.8em', color: 'gray',
@@ -779,6 +779,7 @@ function renderTeacher(t) {
   }
 
 }  // ← closes initApp()
+
 
 
 

@@ -4,5 +4,5 @@ app.js – 0.2.32:
 app.js – 0.2.27:  
                   fixing student view (not loading drills), restoring ADMIN.
                   adding firebase login (email) verification. Trying to get stable here, before starting a new branch for our
-                  purchase cloudflare/revcat/stripe tests. 
+                  purchase cloudflare/revcat/stripe tests..
   
